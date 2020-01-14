@@ -11,7 +11,6 @@ import time
 import matplotlib.pyplot as plt
 import matplotlib.animation
 from PIL import Image
-
 # Simulation parameters
 height = 80                         # dimensions of lattice
 width = 200
@@ -52,8 +51,8 @@ ux = (nE + nNE + nSE - nW - nNW - nSW) / rho
 uy = (nN + nNE + nNW - nS - nSE - nSW) / rho
 
 
-# # Initialize wall locations:
-# # Set to True wherever there's a wall
+# Initialize wall locations:
+# Set to True wherever there's a wall
 # wall = np.zeros((height, width), bool)
 
 # # wall[int((height/2)-8):int((height/2)+8), int((height/2)-4):int((height/2)+4)] = True            # simple linear wall
@@ -64,8 +63,7 @@ uy = (nN + nNE + nNW - nS - nSE - nSW) / rho
 #         if np.sqrt((x-width/4)**2 + (y-height/2)**2) < 10.0:
 #             wall[y, x] = True
 # #wall[40, 50:75] = True
-wall = 1 - np.asarray(Image.open('geometry2.png').convert('1'))
-print(wall.shape)
+wall = np.asarray(Image.open('geometry2.png').convert('1')) == 0
 # Set up indices for fast evaluation of wall neighbors
 # sites just north of barriers
 barrierN = np.roll(wall,  1, axis=0)
@@ -188,7 +186,7 @@ theFig = plt.figure(figsize=(8, 3))
 vis = [mag, 0.2]
 #vis = [curl, 0.02]
 fluidImage = plt.imshow(vis[0](ux, uy), origin='lower', norm=plt.Normalize(
-    -vis[1], vis[1]), cmap="Reds", interpolation='none')
+    -vis[1], vis[1]), cmap=plt.get_cmap('jet'), interpolation='none')
 wImageArray = np.zeros((height, width, 4), np.uint8)  # an RGBA image
 # set alpha=255 wall sites only
 wImageArray[wall, 3] = 255
