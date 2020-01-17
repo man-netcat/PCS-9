@@ -1,7 +1,6 @@
 from __future__ import division, print_function
 
 import sys
-import time
 
 import matplotlib.animation
 import matplotlib.pyplot as plt
@@ -26,7 +25,7 @@ def mag(u_x, u_y):
 
 
 def stream():
-    global c, fin, fout, feq
+    global fin, fout
     for i in range(9):
         fin[i, :, :] = np.roll(
             np.roll(fout[i, :, :], c[i, 0], axis=0), c[i, 1], axis=1)
@@ -35,7 +34,7 @@ def stream():
 # Collide particles within each cell to redistribute velocities
 # (can be optimized a little more):
 def collide():
-    global c, fin, fout, feq
+    global rho, u, fin, fout, feq
     fout = fin - omega * (fin - feq)
     for i in range(9):
         fout[i, geometry.transpose()] = fin[noslip[i], geometry.transpose()]
@@ -43,13 +42,12 @@ def collide():
 
 # Impose boundary conditions
 def boundary():
-    global c, fin, fout, feq
+    global rho, u, fin, fout, feq
     # Right wall: outflow condition.
     fin[i1, -1, :] = fin[i1, -2, :]
     # Calculate macroscopic density and velocity.
     rho = sumpop(fin)
     u = np.dot(c.transpose(), fin.transpose((1, 0, 2)))/rho
-
     # Left wall: compute density from known populations.
     u[:, 0, :] = vel[:, 0, :]
     rho[0, :] = 1./(1.-u[0, 0, :]) * \
@@ -62,13 +60,6 @@ def boundary():
 
 
 def nextFrame(arg):
-    global startTime
-
-    fin[i1, -1, :] = fin[i1, -2, :]
-
-    rho = sumpop(fin)
-    u = np.dot(c.transpose(), fin.transpose((1, 0, 2)))/rho
-
     # Progress our simulation
     for step in range(1):  # adjust number of steps for smooth animation
         boundary()
@@ -102,6 +93,7 @@ if __name__ == '__main__':
     feq = equilibrium(1.0, vel)
     fin = feq.copy()
     rho = sumpop(fin)
+    u = np.dot(c.transpose(), fin.transpose((1, 0, 2)))/rho
 
     # Graphics helper stuff here
     theFig = plt.figure(figsize=(8, 3))
@@ -114,12 +106,8 @@ if __name__ == '__main__':
         interpolation='none'
     )
     wImageArray = np.zeros((height, width, 4), np.uint8)  # an RGBA image
-    # set alpha=255 wall sites only
-    print(geometry.shape)
     wImageArray[geometry, 3] = 255
     wallImage = plt.imshow(wImageArray, origin='lower', interpolation='none')
-
-    startTime = time.clock()    # Start clock for performance counting
 
     animate = matplotlib.animation.FuncAnimation(
         theFig, nextFrame, interval=10, blit=True)
