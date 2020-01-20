@@ -10,7 +10,7 @@ import numpy as np
 import time
 import matplotlib.pyplot as plt
 import matplotlib.animation
-from PIL import Image
+
 # Simulation parameters
 height = 80                         # dimensions of lattice
 width = 200
@@ -53,17 +53,18 @@ uy = (nN + nNE + nNW - nS - nSE - nSW) / rho
 
 # Initialize wall locations:
 # Set to True wherever there's a wall
-# wall = np.zeros((height, width), bool)
+wall = np.zeros((height, width), bool)
 
-# # wall[int((height/2)-8):int((height/2)+8), int((height/2)-4):int((height/2)+4)] = True            # simple linear wall
+# wall[int((height/2)-8):int((height/2)+8), int((height/2)-4):int((height/2)+4)] = True            # simple linear wall
 
-# # Set up cylinder
-# for y in range(0, height):
-#     for x in range(0, width):
-#         if np.sqrt((x-width/4)**2 + (y-height/2)**2) < 10.0:
-#             wall[y, x] = True
-# #wall[40, 50:75] = True
-wall = np.asarray(Image.open('geometry2.png').convert('1')) == 0
+# Set up cylinder
+for y in range(0, height):
+    for x in range(0, width):
+        if np.sqrt((x-width/4)**2 + (y-height/2)**2) < 10.0:
+            wall[y, x] = True
+#wall[40, 50:75] = True
+
+
 # Set up indices for fast evaluation of wall neighbors
 # sites just north of barriers
 barrierN = np.roll(wall,  1, axis=0)
