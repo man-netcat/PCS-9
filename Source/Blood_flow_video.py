@@ -4,6 +4,7 @@ D2Q9 grid
 BGK collision operator
 Karman-vortices
 """
+
 from __future__ import division
 from __future__ import print_function
 import numpy as np
@@ -12,13 +13,11 @@ import matplotlib.pyplot as plt
 import matplotlib.animation
 from PIL import Image
 import os
-# Simulation parameters
-height = 80                         # dimensions of lattice
-width = 200
-viscosity = 0.02                    # viscosity
-omega = 1 / (3*viscosity + 0.5)     # parameter for "relaxation"
-u0 = 0.1                            # initial and in-flow speed
-performanceData = True              # True if performance data is needed
+import sys
+from Initialize_parameters import init_parameters
+
+# Initialize simulation parameters.
+height, width, viscosity, u0, geometry, omega = init_parameters(sys.argv)
 
 # Lattice weight constants for D2Q9
 f_n = 4.0/9.0
@@ -51,24 +50,22 @@ rho = n0 + nN + nS + nE + nW + nNE + nSE + nNW + nSW
 ux = (nE + nNE + nSE - nW - nNW - nSW) / rho
 uy = (nN + nNE + nNW - nS - nSE - nSW) / rho
 
-
 # Initialize wall locations:
-# Set to True wherever there's a wall
-# wall = np.zeros((height, width), bool)
+wall = np.asarray(Image.open(geometry).convert('1')) == 0
+geometry_input = [x for x in range(len(wall.transpose()[0])) if not wall.transpose()[0][x]]
 
-# # wall[int((height/2)-8):int((height/2)+8), int((height/2)-4):int((height/2)+4)] = True            # simple linear wall
+n0_input_eq = n0.transpose()[0][geometry_input]
+nN_input_eq = nN.transpose()[0][geometry_input]
+nS_input_eq = nS.transpose()[0][geometry_input]
+nE_input_eq = nE.transpose()[0][geometry_input]
+nW_input_eq = nW.transpose()[0][geometry_input]
+nNE_input_eq = nNE.transpose()[0][geometry_input]
+nNW_input_eq = nNW.transpose()[0][geometry_input]
+nSE_input_eq = nSE.transpose()[0][geometry_input]
+nSW_input_eq = nSW.transpose()[0][geometry_input]
 
-# # Set up cylinder
-# for y in range(0, height):
-#     for x in range(0, width):
-#         if np.sqrt((x-width/4)**2 + (y-height/2)**2) < 10.0:
-#             wall[y, x] = True
-# #wall[40, 50:75] = True
-wall = np.asarray(Image.open('geometry2.png').convert('1')) == 0
 # Set up indices for fast evaluation of wall neighbors
-# sites just north of barriers
 barrierN = np.roll(wall,  1, axis=0)
-# sites just south of barriers
 barrierS = np.roll(wall, -1, axis=0)
 barrierE = np.roll(wall,  1, axis=1)
 barrierW = np.roll(wall, -1, axis=1)
@@ -78,10 +75,18 @@ barrierSE = np.roll(barrierS,  1, axis=1)
 barrierSW = np.roll(barrierS, -1, axis=1)
 
 # Move all particles by one step along their directions of motion (periodic boundary):
-
-
 def stream():
-    global nN, nS, nE, nW, nNE, nNW, nSE, nSW
+    global rho, ux, uy, n0, nN, nS, nE, nW, nNE, nNW, nSE, nSW
+    
+    rho = n0 + nN + nS + nE + nW + nNE + nSE + nNW + nSW
+    ux = (nE + nNE + nSE - nW - nNW - nSW) / rho
+    uy = (nN + nNE + nNW - nS - nSE - nSW) / rho
+    ux2 = ux * ux               # pre-compute terms used repeatedly...
+    uy2 = uy * uy
+    u2 = ux2 + uy2
+    omu215 = 1 - 1.5*u2         # "one minus u2 times 1.5"
+    uxuy = ux * uy
+
     # axis 0 is north-south; + direction is north
     nN = np.roll(nN,   1, axis=0)
     nNE = np.roll(nNE,  1, axis=0)
@@ -96,6 +101,17 @@ def stream():
     nW = np.roll(nW,  -1, axis=1)
     nNW = np.roll(nNW, -1, axis=1)
     nSW = np.roll(nSW, -1, axis=1)
+    # Update left input stream
+    np.put(n0.transpose(), geometry_input, n0_input_eq)
+    np.put(nN.transpose(), geometry_input, nN_input_eq)
+    np.put(nS.transpose(), geometry_input, nS_input_eq)
+    np.put(nE.transpose(), geometry_input, nE_input_eq)
+    np.put(nW.transpose(), geometry_input, nW_input_eq)
+    np.put(nNE.transpose(), geometry_input, nNE_input_eq)
+    np.put(nNW.transpose(), geometry_input, nNW_input_eq)
+    np.put(nSE.transpose(), geometry_input, nSE_input_eq)
+    np.put(nSW.transpose(), geometry_input, nSW_input_eq)
+
 
 
 # Collide particles within each cell to redistribute velocities (can be optimized a little more):
@@ -153,8 +169,6 @@ def boundary():
     nSW[:, 0] = o_36 * (1 - 3*u0 + 4.5*u0**2 - 1.5*u0**2)
 
 # Helper functions
-
-
 def curl(ux, uy):
     return np.roll(uy, -1, axis=1) - np.roll(uy, 1, axis=1) - np.roll(ux, -1, axis=0) + np.roll(ux, 1, axis=0)
 
@@ -162,36 +176,15 @@ def curl(ux, uy):
 def mag(ux, uy):
     return np.sqrt(ux**2+uy**2)
 
-
-def momentumExchange():
-    mN = np.sum(nN[wall]+nS[barrierN])
-    mS = np.sum(nS[wall]+nN[barrierS])
-    mE = np.sum(nE[wall]+nW[barrierE])
-    mW = np.sum(nW[wall]+nE[barrierW])
-
-    mNW = np.sum(nNW[wall] + nSE[barrierNW])
-    mSE = np.sum(nSE[wall] + nNW[barrierSE])
-    mNE = np.sum(nNE[wall] + nSW[barrierNE])
-    mSW = np.sum(nSW[wall] + nNE[barrierSW])
-
-    dm_x = mW - mE + mNW - mSE - mNE + mSW
-    dm_y = mN - mS + mNW - mSE + mNE - mSW
-
-    # Note: this is momentum density now, multiply by dx^2 to get momentum
-    # Note2: we can assume F = dm / dt
-    return (dm_x, dm_y)
-
-
 #### Graphics helper stuff here
 theFig = plt.figure(figsize=(8,3))
 vis = [mag, 0.2]
-#vis = [curl, 0.02]
-fluidImage = plt.imshow(vis[0](ux, uy), origin='lower', norm=plt.Normalize(-vis[1], vis[1]), cmap=plt.get_cmap('Reds'), interpolation='none')    
+# vis = [curl, 0.02]
+fluidImage = plt.imshow(vis[0](ux, uy), origin='lower', norm=plt.Normalize(-vis[1], vis[1]), cmap=plt.get_cmap('jet'), interpolation='none')    
 wImageArray = np.zeros((height, width, 4), np.uint8)  # an RGBA image
 wImageArray[wall,3] = 255                             # set alpha=255 wall sites only
 wallImage = plt.imshow(wImageArray, origin='lower', interpolation='none')
 
-# plt.show()
 
 # Function called to update plot -> also progresses the simulation
 def nextFrame(arg):         # (arg is the frame number)
@@ -199,19 +192,20 @@ def nextFrame(arg):         # (arg is the frame number)
     if not os.path.exists("pics"):
         os.mkdir("pics")
 
-    plt.savefig("./pics/" + str(arg) + ".png")
+    plt.savefig("./pics/" + str(arg) + ".jpg")
     plt.close()
+
     # Progress our simulation
-    for step in range(15):                  # adjust number of steps for smooth animation
+    for step in range(5): # adjust number of steps for smooth animation
         stream()
         collide()
         boundary()
     
     # Update the plot image
-    fluidImage = plt.imshow(vis[0](ux, uy), origin='lower', norm=plt.Normalize(-vis[1], vis[1]), cmap=plt.get_cmap('Reds'), interpolation='none')
+    fluidImage = plt.imshow(vis[0](ux, uy), origin='lower', norm=plt.Normalize(-vis[1], vis[1]), cmap=plt.get_cmap('jet'), interpolation='none')
     plt.imshow(wImageArray, origin='lower', interpolation='none')
     return (fluidImage, wallImage)       # return the figure elements to redraw
 
-for i in range(1000):
+for i in range(150):
     print(i)
     nextFrame(i)
