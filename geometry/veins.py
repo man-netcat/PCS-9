@@ -11,9 +11,10 @@ NO_WALL = False
 
 
 class Veins:
-    def __init__(self, res):
+    def __init__(self, width, height):
         self.image = []
-        self.res = res
+        self.width = width
+        self.height = height
         self.veins = []
         self.angles = []
 
@@ -24,9 +25,7 @@ class Veins:
         return new_vein
 
     def get_image(self):
-        height = 500
-        width = 1000
-        image = np.full((height, width), WALL)
+        image = np.full((self.height, self.width), WALL)
         for vein in self.veins:
             image = vein.draw(image)
         return image
@@ -65,7 +64,6 @@ class Vein:
         x1, x2 = xs[i:i + 2]
         y1, y2 = ys[i:i + 2]
         return (x1+x2)/2, (y1+y2)/2
-
 
     def draw(self, image):
         for i, (angle, veins) in enumerate(self.ends):

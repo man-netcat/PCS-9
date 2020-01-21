@@ -15,6 +15,7 @@ def edge(org, dest, ang_o, ang_d, width):
     p3 = dest - np.array([np.cos(ang_d), np.sin(ang_d)]) * end_w
     p4 = dest
 
+    print('p3, p4', p3, p4)
     return bezier(p1, p2, p3, p4, width)
     # perp = (p1[1] - p2[1], p2[0] - p1[0])
     # perp = perp / np.linalg.norm(perp) * width
@@ -83,6 +84,8 @@ def bezier(p1, p2, p3, p4, width, res=10):
     perp = perp / np.linalg.norm(perp) * width / 2
     xsd.append(p4[0] - perp[0])
     ysd.append(p4[1] - perp[1])
+    xsd.append(p4[0] + perp[0])
+    ysd.append(p4[1] + perp[1])
 
     xsd.reverse()
     ysd.reverse()

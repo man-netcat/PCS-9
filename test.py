@@ -4,7 +4,7 @@ import numpy as np
 
 from geometry.veins import Veins
 
-split_vein = Veins(10)
+split_vein = Veins(1000, 500)
 v0 = split_vein.add_vein((0, 250), (200, 450), angle=0, width=50)
 a1 = v0.add_end(40)
 a2 = v0.add_end(-40)
@@ -18,9 +18,6 @@ print('test')
 # h.addInlet(flow)
 # h.addOutlet()
 
-# h.size()
-# h.get_inlets() --> {postitions: [], flow:number}[]
-# h.get_outlets() --> {postitions: []}
 
 image = split_vein.get_image()
 fig = plt.figure()
