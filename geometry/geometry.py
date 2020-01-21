@@ -25,10 +25,10 @@ def edge(org, dest, ang_o, ang_d, width):
 def node(p, width, angle, angles, widths):
     # make connecting geometry
     c_geom = [(0, 0)]
-    for angle, width in zip(angles, widths):
+    for a, w in zip(angles, widths):
         prev = c_geom[-1]
-        angle = np.radians(angle)
-        point = (prev[0] + np.cos(angle) * width, prev[1] + np.sin(angle) * width)
+        a = np.radians(a-90)
+        point = (prev[0] + np.cos(a) * w, prev[1] + np.sin(a) * w)
         c_geom.append(point)
     c_geom = np.array(c_geom)
     print(c_geom)
@@ -39,17 +39,17 @@ def node(p, width, angle, angles, widths):
     # move self width away from end
     p = np.array(p)
     perp_a = np.radians(angle+90)
-    perp = np.array([np.cos(perp_a), np.sin(perp_a)]) * width
+    perp = np.array([np.cos(perp_a), np.sin(perp_a)]) * width / 2
     p_mid = p + np.cross(perp, [0, 0, 1])[:2]
     c_geom = [p + p_mid for p in c_geom]
 
     # add ends
     p1 = p - perp
     p2 = p + perp
-    c_geom = []
+    # c_geom = []
     c_geom.append(p1)
     c_geom.append(p2)
-    c_geom.append(p_mid)
+    # c_geom.append(p_mid)
     print(p1, p2)
 
     xs = [p[0] for p in c_geom]
@@ -78,6 +78,9 @@ def bezier(p1, p2, p3, p4, width, res=10):
         p = p / np.linalg.norm(p) * width
         xsd.append(x + p[0])
         ysd.append(y + p[1])
+
+    perp = (p3[1] - p4[1], p4[0] - p3[0])
+    perp = perp / np.linalg.norm(perp) * width / 2
     xsd.append(p4[0] - perp[0])
     ysd.append(p4[1] - perp[1])
 
