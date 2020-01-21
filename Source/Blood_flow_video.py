@@ -77,16 +77,6 @@ barrierSW = np.roll(barrierS, -1, axis=1)
 # Move all particles by one step along their directions of motion (periodic boundary):
 def stream():
     global rho, ux, uy, n0, nN, nS, nE, nW, nNE, nNW, nSE, nSW
-    
-    rho = n0 + nN + nS + nE + nW + nNE + nSE + nNW + nSW
-    ux = (nE + nNE + nSE - nW - nNW - nSW) / rho
-    uy = (nN + nNE + nNW - nS - nSE - nSW) / rho
-    ux2 = ux * ux               # pre-compute terms used repeatedly...
-    uy2 = uy * uy
-    u2 = ux2 + uy2
-    omu215 = 1 - 1.5*u2         # "one minus u2 times 1.5"
-    uxuy = ux * uy
-
     # axis 0 is north-south; + direction is north
     nN = np.roll(nN,   1, axis=0)
     nNE = np.roll(nNE,  1, axis=0)

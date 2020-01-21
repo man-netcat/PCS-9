@@ -10,7 +10,6 @@ from PIL import Image
 
 def sumpop(fin): return np.sum(fin, axis=0)
 
-
 def equilibrium(rho, u):
     cu = 3.0 * np.dot(c, u.transpose(1, 0, 2))
     usqr = 3./2.*(u[0]**2+u[1]**2)
@@ -18,7 +17,6 @@ def equilibrium(rho, u):
     for i in range(9):
         feq[i, :, :] = rho*t[i]*(1.+cu[i]+0.5*cu[i]**2-usqr)
     return feq
-
 
 def mag(u_x, u_y):
     return np.sqrt(u_x**2+u_y**2)
