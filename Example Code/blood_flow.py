@@ -24,58 +24,44 @@ def mag(u_x, u_y):
     return np.sqrt(u_x**2+u_y**2)
 
 
-def stream():
-    global fin, fout
-    for i in range(9):
-        fin[i, :, :] = np.roll(
-            np.roll(fout[i, :, :], c[i, 0], axis=0), c[i, 1], axis=1)
-
-
-# Collide particles within each cell to redistribute velocities
-# (can be optimized a little more):
-def collide():
-    global rho, u, fin, fout, feq
-    fout = fin - omega * (fin - feq)
-    for i in range(9):
-        fout[i, geometry.transpose()] = fin[noslip[i], geometry.transpose()]
-
-
-# Impose boundary conditions
-def boundary():
-    global rho, u, fin, fout, feq
-    # Right wall: outflow condition.
-    fin[i1, -1, :] = fin[i1, -2, :]
-    # Calculate macroscopic density and velocity.
-    rho = sumpop(fin)
-    u = np.dot(c.transpose(), fin.transpose((1, 0, 2)))/rho
-    # Left wall: compute density from known populations.
-    u[:, 0, :] = vel[:, 0, :]
-    rho[0, :] = 1./(1.-u[0, 0, :]) * \
-        (sumpop(fin[i2, 0, :])+2.*sumpop(fin[i1, 0, :]))
-    # Left wall: Zou/He boundary condition.
-    feq = equilibrium(rho, u)
-    fin[i3, 0, :] = fin[i1, 0, :] + feq[i3, 0, :] - fin[i1, 0, :]
-    # Collision step.
-    fout = fin - omega * (fin - feq)
-
-
 def nextFrame(arg):
     # Progress our simulation
     for step in range(1):  # adjust number of steps for smooth animation
-        boundary()
-        collide()
-        stream()
+        fin[i1, -1, :] = fin[i1, -2, :]  # Right wall: outflow condition.'
+        # Calculate macroscopic density and velocity.
+        rho = sumpop(fin)
+        u = np.dot(c.transpose(), fin.transpose((1, 0, 2)))/rho
+
+        #########################################################################
+        # Left wall: compute density from known populations.
+        u[:, 0, :] = vel[:, 0, :]
+        rho[0, :] = 1/(1-u[0, 0, :]) * \
+            (sumpop(fin[i2, 0, :])+2.*sumpop(fin[i1, 0, :]))
+        feq = equilibrium(rho, u)  # Left wall: Zou/He boundary condition.
+        fin[i3, 0, :] = fin[i1, 0, :] + feq[i3, 0, :] - fin[i1, 0, :]
+        #########################################################################
+
+        # Collision
+        fout = fin - Omega * (fin - feq)
+        for i in np.arange(9):
+            fout[i, geometry.transpose()] = fin[noslip[i],
+                                                geometry.transpose()]
+
+        # Streaming
+        for i in np.arange(9):
+            fin[i, :, :] = np.roll(
+                np.roll(fout[i, :, :], c[i, 0], axis=0), c[i, 1], axis=1)
 
     fluidImage.set_array(vis[0](u[0], u[1]).transpose())
     return (fluidImage, wallImage)  # return the figure elements to redraw
 
 
 if __name__ == '__main__':
-    geometry = np.asarray(Image.open(sys.argv[1]).convert('1')) == 0
+    geometry = (np.asarray(Image.open(sys.argv[1]).convert('1')) == 0)
     height, width = geometry.shape
 
     viscosity = 0.02                    # viscosity
-    omega = 1 / (3*viscosity + 0.5)     # parameter for "relaxation"
+    Omega = 1 / (3*viscosity + 0.5)     # parameter for "relaxation"
     u0 = 0.1                            # initial and in-flow speed
 
     # Lattice Constants
