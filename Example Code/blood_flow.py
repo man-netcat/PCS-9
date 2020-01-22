@@ -10,6 +10,7 @@ from PIL import Image
 
 def sumpop(fin): return np.sum(fin, axis=0)
 
+
 def equilibrium(rho, u):
     cu = 3.0 * np.dot(c, u.transpose(1, 0, 2))
     usqr = 3./2.*(u[0]**2+u[1]**2)
@@ -18,26 +19,25 @@ def equilibrium(rho, u):
         feq[i, :, :] = rho*t[i]*(1.+cu[i]+0.5*cu[i]**2-usqr)
     return feq
 
+
 def mag(u_x, u_y):
     return np.sqrt(u_x**2+u_y**2)
 
 
-def nextFrame(arg):
+def update(arg):
     # Progress our simulation
-    for step in range(1):  # adjust number of steps for smooth animation
+    for _ in range(1):  # adjust number of steps for smooth animation
         fin[i1, -1, :] = fin[i1, -2, :]  # Right wall: outflow condition.'
         # Calculate macroscopic density and velocity.
         rho = sumpop(fin)
         u = np.dot(c.transpose(), fin.transpose((1, 0, 2)))/rho
 
-        #########################################################################
         # Left wall: compute density from known populations.
         u[:, 0, :] = vel[:, 0, :]
         rho[0, :] = 1/(1-u[0, 0, :]) * \
             (sumpop(fin[i2, 0, :])+2.*sumpop(fin[i1, 0, :]))
         feq = equilibrium(rho, u)  # Left wall: Zou/He boundary condition.
         fin[i3, 0, :] = fin[i1, 0, :] + feq[i3, 0, :] - fin[i1, 0, :]
-        #########################################################################
 
         # Collision
         fout = fin - Omega * (fin - feq)
@@ -50,7 +50,12 @@ def nextFrame(arg):
             fin[i, :, :] = np.roll(
                 np.roll(fout[i, :, :], c[i, 0], axis=0), c[i, 1], axis=1)
 
-    fluidImage.set_array(vis[0](u[0], u[1]).transpose())
+    fluidImage.set_array(
+        # Velocity
+        # vis[0](u[0], u[1]).transpose()
+        # Density
+        rho.transpose()
+    )
     return (fluidImage, wallImage)  # return the figure elements to redraw
 
 
@@ -80,19 +85,24 @@ if __name__ == '__main__':
     u = np.dot(c.transpose(), fin.transpose((1, 0, 2)))/rho
 
     # Graphics helper stuff here
-    theFig = plt.figure(figsize=(8, 3))
+    fig = plt.figure(figsize=(8, 3))
     vis = [mag, 0.2]
-    # vis = [curl, 0.02]
     fluidImage = plt.imshow(
-        vis[0](vel[0], vel[1]).transpose(),
+        # Velocity
+        # vis[0](vel[0], vel[1]).transpose(),
+        # Density
+        rho.transpose(),
         origin='lower',
         norm=plt.Normalize(-vis[1], vis[1]),
-        interpolation='none'
+        interpolation='none',
+        cmap=plt.get_cmap('jet')
     )
     wImageArray = np.zeros((height, width, 4), np.uint8)  # an RGBA image
     wImageArray[geometry, 3] = 255
     wallImage = plt.imshow(wImageArray, origin='lower', interpolation='none')
 
     animate = matplotlib.animation.FuncAnimation(
-        theFig, nextFrame, interval=10, blit=True)
-    plt.show()
+        fig, update, interval=1, blit=True, frames=500)
+    Writer = matplotlib.animation.writers['ffmpeg']
+    writer = Writer(fps=15, metadata=dict(artist='Me'), bitrate=1800)
+    animate.save('im.mp4', writer=writer)
