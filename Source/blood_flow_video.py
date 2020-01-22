@@ -7,17 +7,28 @@ Karman-vortices
 
 from __future__ import division
 from __future__ import print_function
-import numpy as np
-import time
 import matplotlib.pyplot as plt
 import matplotlib.animation
 from PIL import Image
-import os
+import numpy as np
 import sys
-from Initialize_parameters import init_parameters
 
-# Initialize simulation parameters.
-height, width, viscosity, u0, geometry, omega, filename = init_parameters(sys.argv)
+# Fixed parameters:
+height = 80
+width = 200
+viscosity = 0.05
+u0 = 0.25                           # initial and in-flow speed
+omega = 1 / (3*viscosity + 0.5)     # parameter for "relaxation"
+
+# Custom parameters
+geometry = "./geometries/geometry2.png"
+videoname = "video.mp4"
+fps = 15
+
+if len(sys.argv) > 1:
+    geometry = "./geometries/" + sys.argv[1]
+if len(sys.argv) > 2:
+    videoname = sys.argv[2]
 
 # Lattice weight constants for D2Q9
 f_n = 4.0/9.0
@@ -174,16 +185,6 @@ def boundary():
     nNW[:, 0] = o_36 * (1 - 3*u0 + 4.5*u0**2 - 1.5*u0**2)
     nSW[:, 0] = o_36 * (1 - 3*u0 + 4.5*u0**2 - 1.5*u0**2)
 
-def calculateOutflow():
-    global n0, nN, nS, nE, nW, nNE, nNW, nSE, nSW
-    totalVelocities = n0 + nN + nS + nE + nW + nNE + nSE + nNW + nSW
-    # print(sum(sum(totalVelocities)))
-    print(sum(nE[:,-1][geometry_output1]) + sum(nNE[:,-1][geometry_output1]) + sum(nSE[:,-1][geometry_output1]))
-    print(sum(nE[:,-1][geometry_output2]) + sum(nNE[:,-1][geometry_output2]) + sum(nSE[:,-1][geometry_output2]))
-    # print(sum(totalVelocities[:,-1][geometry_output1]))
-    # print(sum(totalVelocities[:,-1][geometry_output2]))
-    
-
 # Helper functions
 def curl(ux, uy):
     return np.roll(uy, -1, axis=1) - np.roll(uy, 1, axis=1) - np.roll(ux, -1, axis=0) + np.roll(ux, 1, axis=0)
@@ -193,36 +194,37 @@ def mag(ux, uy):
     return np.sqrt(ux**2+uy**2)
 
 #### Graphics helper stuff here
-theFig = plt.figure(figsize=(8,3))
+fig = plt.figure(figsize=(8,3))
 vis = [mag, 0.2]
 # vis = [curl, 0.02]
 fluidImage = plt.imshow(vis[0](ux, uy), origin='lower', norm=plt.Normalize(-vis[1], vis[1]), cmap=plt.get_cmap('jet'), interpolation='none')    
 wImageArray = np.zeros((height, width, 4), np.uint8)  # an RGBA image
-wImageArray[wall,3] = 255                             # set alpha=255 wall sites only
+wImageArray[wall, 3] = 255                            # set alpha=255 wall sites only
 wallImage = plt.imshow(wImageArray, origin='lower', interpolation='none')
 
 
 # Function called to update plot -> also progresses the simulation
-def nextFrame(arg):         # (arg is the frame number)
-    ## We can also save frames for a video
-    if not os.path.exists("pics"):
-        os.mkdir("pics")
-
-    plt.savefig("./pics/" + str(arg) + ".jpg")
-    plt.close()
-
+def nextFrame(frame):
     # Progress our simulation
     for step in range(1): # adjust number of steps for smooth animation
-        calculateOutflow()
         stream()
         collide()
         boundary()
-    
-    # Update the plot image
-    fluidImage = plt.imshow(vis[0](ux, uy), origin='lower', norm=plt.Normalize(-vis[1], vis[1]), cmap=plt.get_cmap('jet'), interpolation='none')
-    plt.imshow(wImageArray, origin='lower', interpolation='none')
-    return (fluidImage, wallImage)       # return the figure elements to redraw
 
-for i in range(750):
-    # print(i)
-    nextFrame(i)
+    # Update the plot image
+    # Speed
+    # fluidImage = plt.imshow(vis[0](ux, uy), origin='lower', norm=plt.Normalize(-vis[1], vis[1]), 
+    # cmap=plt.get_cmap('jet'), interpolation='none')
+
+    # Pressure
+    fluidImage = plt.imshow(rho, origin='lower', cmap=plt.get_cmap('Reds'), interpolation='none')
+
+    plt.imshow(wImageArray, origin='lower', interpolation='none')
+    return (fluidImage, wallImage)
+
+animate = matplotlib.animation.FuncAnimation(fig, nextFrame, interval=1, blit=True, frames=100)
+
+
+Writer = matplotlib.animation.writers['ffmpeg']
+writer = Writer(fps=fps, metadata=dict(artist='Me'), bitrate=1800)
+animate.save(videoname, writer=writer)
