@@ -23,12 +23,17 @@ omega = 1 / (3*viscosity + 0.5)     # parameter for "relaxation"
 # Custom parameters
 geometry = "./geometries/geometry2.png"
 videoname = "video.mp4"
-fps = 15
+fps = 30
+frames = 300
 
 if len(sys.argv) > 1:
     geometry = "./geometries/" + sys.argv[1]
 if len(sys.argv) > 2:
     videoname = sys.argv[2]
+if len(sys.argv) > 3:
+    fps = sys.argv[3]
+if len(sys.argv) > 4:
+    frames = sys.argv[4]
 
 # Lattice weight constants for D2Q9
 f_n = 4.0/9.0
@@ -222,7 +227,7 @@ def nextFrame(frame):
     plt.imshow(wImageArray, origin='lower', interpolation='none')
     return (fluidImage, wallImage)
 
-animate = matplotlib.animation.FuncAnimation(fig, nextFrame, interval=1, blit=True, frames=100)
+animate = matplotlib.animation.FuncAnimation(fig, nextFrame, interval=1, blit=True, frames=frames)
 
 
 Writer = matplotlib.animation.writers['ffmpeg']
