@@ -24,7 +24,7 @@ omega = 1 / (3*viscosity + 0.5)     # parameter for "relaxation"
 geometry = "./geometries/geometry2.png"
 videoname = "video.mp4"
 fps = 30
-frames = 300
+frames = 100
 
 if len(sys.argv) > 1:
     geometry = "./geometries/" + sys.argv[1]
@@ -207,7 +207,29 @@ wImageArray = np.zeros((height, width, 4), np.uint8)  # an RGBA image
 wImageArray[wall, 3] = 255                            # set alpha=255 wall sites only
 wallImage = plt.imshow(wImageArray, origin='lower', interpolation='none')
 
+# Print iterations progress
+def printProgressBar (iteration, total, prefix = '', suffix = '', decimals = 1, length = 100, fill = '█', printEnd = "\r"):
+    """
+    Call in a loop to create terminal progress bar
+    @params:
+        iteration   - Required  : current iteration (Int)
+        total       - Required  : total iterations (Int)
+        prefix      - Optional  : prefix string (Str)
+        suffix      - Optional  : suffix string (Str)
+        decimals    - Optional  : positive number of decimals in percent complete (Int)
+        length      - Optional  : character length of bar (Int)
+        fill        - Optional  : bar fill character (Str)
+        printEnd    - Optional  : end character (e.g. "\r", "\r\n") (Str)
+    """
+    percent = ("{0:." + str(decimals) + "f}").format(100 * (iteration / float(total)))
+    filledLength = int(length * iteration // total)
+    bar = fill * filledLength + '-' * (length - filledLength)
+    print('\r%s |%s| %s%% %s' % (prefix, bar, percent, suffix), end = printEnd)
+    # Print New Line on Complete
+    if iteration == total: 
+        print()
 
+plt.ion()
 # Function called to update plot -> also progresses the simulation
 def nextFrame(frame):
     # Progress our simulation
@@ -222,9 +244,11 @@ def nextFrame(frame):
     # cmap=plt.get_cmap('jet'), interpolation='none')
 
     # Pressure
-    fluidImage = plt.imshow(rho, origin='lower', cmap=plt.get_cmap('Reds'), interpolation='none')
-
-    plt.imshow(wImageArray, origin='lower', interpolation='none')
+    # fluidImage = plt.imshow(rho, origin='lower', cmap=plt.get_cmap('Reds'), interpolation='none')
+    fluidImage.set_array(rho)
+    # plt.close()
+    # plt.imshow(wImageArray, origin='lower', interpolation='none')
+    printProgressBar(frame + 1, frames, prefix = 'Progress:', suffix = 'Complete', length = 50)
     return (fluidImage, wallImage)
 
 animate = matplotlib.animation.FuncAnimation(fig, nextFrame, interval=1, blit=True, frames=frames)
