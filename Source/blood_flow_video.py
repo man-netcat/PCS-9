@@ -8,34 +8,16 @@ Karman-vortices
 from __future__ import division
 from __future__ import print_function
 import numpy as np
+import time
 import matplotlib.pyplot as plt
+import matplotlib.animation
 from PIL import Image
 import os
 import sys
-import cv2
+from Initialize_parameters import init_parameters
 
 # Initialize simulation parameters.
-# height, width, viscosity, u0, geometry, omega= init_parameters(sys.argv)
-
-# Fixed parameters:
-height = 80
-width = 200
-viscosity = 0.05
-u0 = 0.25                           # initial and in-flow speed
-omega = 1 / (3*viscosity + 0.5)     # parameter for "relaxation"
-
-# Custom parameters
-geometry = "./geometries/geometry2.png"
-videoname = "video.avi"
-fps = 15
-
-if len(sys.argv) > 1:
-    geometry = "./geometries/" + sys.argv[1]
-if len(sys.argv) > 2:
-    videoname = sys.argv[2]    
-
-
-
+height, width, viscosity, u0, geometry, omega, filename = init_parameters(sys.argv)
 
 # Lattice weight constants for D2Q9
 f_n = 4.0/9.0
@@ -192,14 +174,14 @@ def boundary():
     nNW[:, 0] = o_36 * (1 - 3*u0 + 4.5*u0**2 - 1.5*u0**2)
     nSW[:, 0] = o_36 * (1 - 3*u0 + 4.5*u0**2 - 1.5*u0**2)
 
-# def calculateOutflow():
-#     global n0, nN, nS, nE, nW, nNE, nNW, nSE, nSW
-#     totalVelocities = n0 + nN + nS + nE + nW + nNE + nSE + nNW + nSW
-#     # print(sum(sum(totalVelocities)))
-#     print(sum(nE[:,-1][geometry_output1]) + sum(nNE[:,-1][geometry_output1]) + sum(nSE[:,-1][geometry_output1]))
-#     print(sum(nE[:,-1][geometry_output2]) + sum(nNE[:,-1][geometry_output2]) + sum(nSE[:,-1][geometry_output2]))
-#     # print(sum(totalVelocities[:,-1][geometry_output1]))
-#     # print(sum(totalVelocities[:,-1][geometry_output2]))
+def calculateOutflow():
+    global n0, nN, nS, nE, nW, nNE, nNW, nSE, nSW
+    totalVelocities = n0 + nN + nS + nE + nW + nNE + nSE + nNW + nSW
+    # print(sum(sum(totalVelocities)))
+    print(sum(nE[:,-1][geometry_output1]) + sum(nNE[:,-1][geometry_output1]) + sum(nSE[:,-1][geometry_output1]))
+    print(sum(nE[:,-1][geometry_output2]) + sum(nNE[:,-1][geometry_output2]) + sum(nSE[:,-1][geometry_output2]))
+    # print(sum(totalVelocities[:,-1][geometry_output1]))
+    # print(sum(totalVelocities[:,-1][geometry_output2]))
     
 
 # Helper functions
@@ -225,44 +207,22 @@ def nextFrame(arg):         # (arg is the frame number)
     ## We can also save frames for a video
     if not os.path.exists("pics"):
         os.mkdir("pics")
-    
+
     plt.savefig("./pics/" + str(arg) + ".jpg")
     plt.close()
 
     # Progress our simulation
     for step in range(1): # adjust number of steps for smooth animation
-        # calculateOutflow()
+        calculateOutflow()
         stream()
         collide()
         boundary()
     
     # Update the plot image
-    # fluidImage = plt.imshow(vis[0](ux, uy), origin='lower', norm=plt.Normalize(-vis[1], vis[1]), cmap=plt.get_cmap('jet'), interpolation='none')
-    fluidImage = plt.imshow(10 * rho, origin='lower', cmap=plt.get_cmap('Reds'), interpolation='none')
+    fluidImage = plt.imshow(vis[0](ux, uy), origin='lower', norm=plt.Normalize(-vis[1], vis[1]), cmap=plt.get_cmap('jet'), interpolation='none')
     plt.imshow(wImageArray, origin='lower', interpolation='none')
     return (fluidImage, wallImage)       # return the figure elements to redraw
 
 for i in range(750):
-    print(i)
+    # print(i)
     nextFrame(i)
-
-file_array = []
-for filename in os.listdir("./pics"):
-    file_array.append(int(filename.split('.')[0]))
-
-file_array.sort()
-file_array = [str(frame_nr) + ".jpg" for frame_nr in file_array]
-frame = cv2.imread(os.path.join("./pics", file_array[1]))
-height, width, layers = frame.shape
- 
-video = cv2.VideoWriter(videoname + ".avi", 0, fps, (width,height))
-
-first = True
-for image in file_array:
-    if first:
-        first = False
-        continue
-    video.write(cv2.imread(os.path.join("./pics", image)))
-
-cv2.destroyAllWindows()
-video.release()
