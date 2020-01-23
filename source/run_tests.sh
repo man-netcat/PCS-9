@@ -1,4 +1,5 @@
-for f in ./*.doc; do
-    # do some stuff here with "$f"
-    # remember to quote it or spaces may misbehave
+var="1"
+for f in ./out/*.png; do
+    python3 blood_flow_video.py "$f" "$var.mp4"
+    var=$((var + 1))
 done

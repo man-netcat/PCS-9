@@ -14,20 +14,20 @@ import numpy as np
 import sys
 
 # Fixed parameters:
-height = 80
-width = 200
+width = 400
+height = 160
 viscosity = 0.05
 u0 = 0.25                           # initial and in-flow speed
 omega = 1 / (3*viscosity + 0.5)     # parameter for "relaxation"
 
 # Custom parameters
-geometry = "./geometries/geometry2.png"
+geometry = "./out/geometry2.png"
 videoname = "video.mp4"
-fps = 10
+fps = 15
 frames = 300
 
 if len(sys.argv) > 1:
-    geometry = "./geometries/" + sys.argv[1]
+    geometry = sys.argv[1]
 if len(sys.argv) > 2:
     videoname = sys.argv[2]
 if len(sys.argv) > 3:
@@ -67,7 +67,7 @@ ux = (nE + nNE + nSE - nW - nNW - nSW) / rho
 uy = (nN + nNE + nNW - nS - nSE - nSW) / rho
 
 # Initialize wall locations:
-wall = np.asarray(Image.open(geometry).convert('1')) == 0
+wall = np.asarray(Image.open(geometry).convert('1')) == 1
 geometry_input = [x for x in range(len(wall.transpose()[0])) if not wall.transpose()[0][x]]
 geometry_outputs = [x for x in range(len(wall.transpose()[0])) if not wall.transpose()[-1][x]]
 
@@ -199,7 +199,7 @@ def mag(ux, uy):
     return np.sqrt(ux**2+uy**2)
 
 #### Graphics helper stuff here
-fig = plt.figure(figsize=(8,3))
+fig = plt.figure(figsize=(10,4))
 vis = [mag, 0.2]
 # vis = [curl, 0.02]
 fluidImage = plt.imshow(vis[0](ux, uy), origin='lower', norm=plt.Normalize(-vis[1], vis[1]), cmap=plt.get_cmap('jet'), interpolation='none')    

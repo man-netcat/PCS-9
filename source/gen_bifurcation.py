@@ -11,9 +11,9 @@ import geometry.bifurcation as bifurcation
 parser = argparse.ArgumentParser(
     description='Generate multiple bifurcation geom files')
 parser.add_argument('--width', '-W', type=int,
-                    default=1000, help='Width of image')
+                    default=400, help='Width of image')
 parser.add_argument('--height', '-H', type=int,
-                    default=500, help='Height of image')
+                    default=160, help='Height of image')
 parser.add_argument('--num', '-n', type=int, default=10,
                     help='Number of geometries generated')
 parser.add_argument('--min', '-m', type=float, default=0.0,
