@@ -18,10 +18,10 @@ class Veins:
         self.veins = []
         self.angles = []
 
-    def add_vein(self, pos_from, pos_to, angle=0., width=3):
-        new_vein = Vein(pos_from, pos_to, angle=angle, width=width)
+    def add_vein(self, pos_from, pos_to, angle_from=0., angle_to=0., width=3):
+        new_vein = Vein(pos_from, pos_to, angle_from=angle_from, angle_to=angle_to, width=width)
         self.veins.append(new_vein)
-        self.angles.append(angle)
+        self.angles.append(angle_from)
         return new_vein
 
     def get_image(self):
@@ -32,11 +32,12 @@ class Veins:
 
 
 class Vein:
-    def __init__(self, pos_from: Pos, pos_to: Pos, angle: float, ends: List[float] = None, width: float = 5, res=50):
+    def __init__(self, pos_from: Pos, pos_to: Pos, angle_from: float, angle_to: float, ends: List[float] = None, width: float = 5, res=50):
         self.width = [width] * res
         self.pos_from = pos_from
         self.pos_to = pos_to
-        self.angle = angle
+        self.angle_from = angle_from
+        self.angle_to = angle_to
         if not ends:
             ends = []
         self.ends = [(angle, []) for angle in ends]
@@ -44,7 +45,7 @@ class Vein:
         self.res = res
 
     def get_probe_point(self, pos):
-        xs, ys = edge(self.pos_from, self.pos_to, self.angle, 0, width=0, res=self.res)
+        xs, ys = edge(self.pos_from, self.pos_to, self.angle_from, self.angle_to, width=0, res=self.res)
         # pos = 1 - pos
         i = round((len(xs) - 1) * pos)
         return xs[i], ys[i]
@@ -74,10 +75,10 @@ class Vein:
         finds = sorted(finds)
         return finds[0][1]
 
-    def append_vein(self, pos: Pos, end_i: int, width: float = 5):
+    def append_vein(self, pos: Pos, end_i: int, angle_to=0, width: float = 5):
         self._junction = None
         # end = self.get_ends_loc(end_i)
-        new_vein = Vein((-1, -1), pos, self.ends[end_i][0], [], width)
+        new_vein = Vein((-1, -1), pos, angle_from=self.ends[end_i][0], angle_to=angle_to, ends=[], width=width)
         self.ends[end_i][1].append(new_vein)
         return new_vein
 
@@ -111,8 +112,7 @@ class Vein:
             return self.width
 
     def _get_vein(self):
-        return edge(self.pos_from, self.pos_to, self.angle, 0, width=self.width, res=self.res)
-
+        return edge(self.pos_from, self.pos_to, self.angle_from, self.angle_to, width=self.width, res=self.res)
 
     def _draw_vein(self, image):
         xs, ys = self._get_vein()
