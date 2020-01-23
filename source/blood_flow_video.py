@@ -21,7 +21,7 @@ u0 = 0.25                           # initial and in-flow speed
 omega = 1 / (3*viscosity + 0.5)     # parameter for "relaxation"
 
 # Custom parameters
-geometry = "./geometries/geometry2.png"
+geometry = "./out/geometry2.png"
 videoname = "video.mp4"
 fps = 10
 frames = 300
