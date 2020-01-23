@@ -24,7 +24,7 @@ def mag(u_x, u_y):
     return np.sqrt(u_x**2+u_y**2)
 
 
-def update(arg):
+def update(frame):
     # Progress our simulation
     for _ in range(1):  # adjust number of steps for smooth animation
         fin[i1, -1, :] = fin[i1, -2, :]  # Right wall: outflow condition.'
@@ -52,20 +52,44 @@ def update(arg):
 
     fluidImage.set_array(
         # Velocity
-        # vis[0](u[0], u[1]).transpose()
+        vis[0](u[0], u[1]).transpose()
         # Density
-        rho.transpose()
+        # rho.transpose()
     )
+    # fluidImage = plt.imshow(
+    #     vis[0](u[0], u[1]).transpose(),
+    #     # rho.transpose(),
+    #     origin='lower',
+    #     cmap=plt.get_cmap('Reds'),
+    #     interpolation='none'
+    # )
+    printProgressBar(frame + 1, frames, prefix='Progress:',
+                     suffix='Complete', length=50)
     return (fluidImage, wallImage)  # return the figure elements to redraw
 
 
+def printProgressBar(iteration, total, prefix='', suffix='', decimals=1,
+                     length=100, fill='█', printEnd="\r"):
+    percent = ("{0:." + str(decimals) + "f}"
+               ).format(100 * (iteration / float(total)))
+    filledLength = int(length * iteration // total)
+    bar = fill * filledLength + '-' * (length - filledLength)
+    print('\r%s |%s| %s%% %s' % (prefix, bar, percent, suffix), end=printEnd)
+    # Print New Line on Complete
+    if iteration == total:
+        print()
+
+
 if __name__ == '__main__':
-    geometry = (np.asarray(Image.open(sys.argv[1]).convert('1')) == 0)
+    geometry = np.asarray(Image.open(sys.argv[1]).convert('1'))
     height, width = geometry.shape
 
     viscosity = 0.02                    # viscosity
     Omega = 1 / (3*viscosity + 0.5)     # parameter for "relaxation"
     u0 = 0.1                            # initial and in-flow speed
+
+    frames = 400
+    fps = 20
 
     # Lattice Constants
     c = np.array([(x, y) for x in [0, -1, 1] for y in [0, -1, 1]])
@@ -89,20 +113,22 @@ if __name__ == '__main__':
     vis = [mag, 0.2]
     fluidImage = plt.imshow(
         # Velocity
-        # vis[0](vel[0], vel[1]).transpose(),
+        vis[0](vel[0], vel[1]).transpose(),
         # Density
-        rho.transpose(),
+        # rho.transpose(),
         origin='lower',
         norm=plt.Normalize(-vis[1], vis[1]),
         interpolation='none',
-        cmap=plt.get_cmap('jet')
+        cmap=plt.get_cmap('Reds')
     )
+
     wImageArray = np.zeros((height, width, 4), np.uint8)  # an RGBA image
     wImageArray[geometry, 3] = 255
     wallImage = plt.imshow(wImageArray, origin='lower', interpolation='none')
 
     animate = matplotlib.animation.FuncAnimation(
-        fig, update, interval=1, blit=True, frames=500)
+        fig, update, interval=1, blit=True, frames=frames)
+    # plt.show()
     Writer = matplotlib.animation.writers['ffmpeg']
-    writer = Writer(fps=15, metadata=dict(artist='Me'), bitrate=1800)
+    writer = Writer(fps=fps, metadata=dict(artist='Me'), bitrate=1800)
     animate.save('im.mp4', writer=writer)
