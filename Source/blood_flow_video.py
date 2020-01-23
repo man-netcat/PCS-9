@@ -23,8 +23,8 @@ omega = 1 / (3*viscosity + 0.5)     # parameter for "relaxation"
 # Custom parameters
 geometry = "./geometries/geometry2.png"
 videoname = "video.mp4"
-fps = 30
-frames = 100
+fps = 10
+frames = 300
 
 if len(sys.argv) > 1:
     geometry = "./geometries/" + sys.argv[1]
@@ -232,27 +232,30 @@ def printProgressBar (iteration, total, prefix = '', suffix = '', decimals = 1, 
 plt.ion()
 # Function called to update plot -> also progresses the simulation
 def nextFrame(frame):
+    plt.close
+    
     # Progress our simulation
     for step in range(1): # adjust number of steps for smooth animation
         stream()
         collide()
         boundary()
 
-    # Update the plot image
-    # Speed
+    # Show the speed in the image
     # fluidImage = plt.imshow(vis[0](ux, uy), origin='lower', norm=plt.Normalize(-vis[1], vis[1]), 
     # cmap=plt.get_cmap('jet'), interpolation='none')
 
-    # Pressure
-    # fluidImage = plt.imshow(rho, origin='lower', cmap=plt.get_cmap('Reds'), interpolation='none')
-    fluidImage.set_array(rho)
-    # plt.close()
-    # plt.imshow(wImageArray, origin='lower', interpolation='none')
+    # Show the pressure in the image
+    fluidImage = plt.imshow(rho, origin='lower', cmap=plt.get_cmap('Reds'), interpolation='none')
+    
+    # Add the walls to the image
+    plt.imshow(wImageArray, origin='lower', interpolation='none')
+    
+    # Show progress of simulation
     printProgressBar(frame + 1, frames, prefix = 'Progress:', suffix = 'Complete', length = 50)
     return (fluidImage, wallImage)
 
 animate = matplotlib.animation.FuncAnimation(fig, nextFrame, interval=1, blit=True, frames=frames)
-
+plt.show()
 
 Writer = matplotlib.animation.writers['ffmpeg']
 writer = Writer(fps=fps, metadata=dict(artist='Me'), bitrate=1800)
