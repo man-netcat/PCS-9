@@ -49,20 +49,12 @@ def update(frame):
         for i in np.arange(9):
             fin[i, :, :] = np.roll(
                 np.roll(fout[i, :, :], c[i, 0], axis=0), c[i, 1], axis=1)
-
     fluidImage.set_array(
         # Velocity
         # vis[0](u[0], u[1]).transpose()
         # Density
         rho.transpose()
     )
-    # fluidImage = plt.imshow(
-    #     vis[0](u[0], u[1]).transpose(),
-    #     # rho.transpose(),
-    #     origin='lower',
-    #     cmap=plt.get_cmap('Reds'),
-    #     interpolation='none'
-    # )
     printProgressBar(frame + 1, frames, prefix='Progress:',
                      suffix='Complete', length=50)
     return (fluidImage, wallImage)  # return the figure elements to redraw
@@ -84,12 +76,13 @@ if __name__ == '__main__':
     geometry = np.asarray(Image.open(sys.argv[1]).convert('1'))
     height, width = geometry.shape
 
-    viscosity = 0.02                    # viscosity
-    Omega = 1 / (3*viscosity + 0.5)     # parameter for "relaxation"
-    u0 = 0.1                            # initial and in-flow speed
+    Re = 50  # Reynolds number.
+    u_0 = 0.1  # Velocity in lattice units.
+    viscosity = u_0/Re
+    Omega = 1.0 / (3.*viscosity+0.5)  # Relaxation parameter.
 
     frames = 400
-    fps = 20
+    fps = 60
 
     # Lattice Constants
     c = np.array([(x, y) for x in [0, -1, 1] for y in [0, -1, 1]])
@@ -102,8 +95,12 @@ if __name__ == '__main__':
     i3 = np.arange(9)[np.asarray([ci[0] > 0 for ci in c])]
 
     # Calculate macroscopic density and velocity.
-    vel = np.array([np.full((width, height), u0), np.full((width, height), 0)])
-    feq = equilibrium(1.0, vel)
+    # vel = np.fromfunction(lambda d, x, y: (1-d)*u_0 *
+    #                       (1.0+1e-4*np.sin(y/(height-1)*2*np.pi)),
+    #                       (2, width, height))
+    vel = np.array([np.full((width, height), u_0),
+                    np.full((width, height), 0)])
+    feq = equilibrium(1, vel)
     fin = feq.copy()
     rho = sumpop(fin)
     u = np.dot(c.transpose(), fin.transpose((1, 0, 2)))/rho
@@ -111,17 +108,22 @@ if __name__ == '__main__':
     # Graphics helper stuff here
     fig = plt.figure(figsize=(8, 3))
     vis = [mag, 0.2]
+    # Velocity
     fluidImage = plt.imshow(
-        # Velocity
-        # vis[0](vel[0], vel[1]).transpose(),
-        # Density
-        rho.transpose(),
+        vis[0](vel[0], vel[1]).transpose(),
         origin='lower',
         norm=plt.Normalize(-vis[1], vis[1]),
         interpolation='none',
         cmap=plt.get_cmap('Reds')
     )
-
+    # Density
+    # fluidImage = plt.imshow(
+    #     rho.transpose(),
+    #     origin='lower',
+    #     norm=plt.Normalize(1, 1.1),
+    #     interpolation='none',
+    #     cmap=plt.get_cmap('jet')
+    # )
     wImageArray = np.zeros((height, width, 4), np.uint8)  # an RGBA image
     wImageArray[geometry, 3] = 255
     wallImage = plt.imshow(wImageArray, origin='lower', interpolation='none')
