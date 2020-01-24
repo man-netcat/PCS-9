@@ -44,11 +44,18 @@ class Vein:
         self._junction = None
         self.res = res
 
+    def set_width(self, width):
+        self.width = [width] * self.res
+
     def get_probe_point(self, pos):
         xs, ys = edge(self.pos_from, self.pos_to, self.angle_from, self.angle_to, width=0, res=self.res)
         # pos = 1 - pos
         i = round((len(xs) - 1) * pos)
         return xs[i], ys[i]
+
+    def taper_to(self, end_width):
+        cur_width = self.start_width()
+        self.width = np.linspace(cur_width, end_width, num=self.res)
 
     def add_narrowing(self, loc, width, height):
         """
