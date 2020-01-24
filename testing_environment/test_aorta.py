@@ -1,4 +1,4 @@
-import geometry.aorta as aorta
+import source.geometry.aorta as aorta
 import matplotlib.pyplot as plt
 
 abdominal, veins = aorta.build_abdominal(20)

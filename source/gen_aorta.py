@@ -2,7 +2,6 @@ import argparse
 import os
 import numpy as np
 import shutil
-import matplotlib.pyplot as plt
 from PIL import Image
 import itertools
 
