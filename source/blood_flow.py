@@ -7,17 +7,16 @@ import matplotlib.pyplot as plt
 import numpy as np
 from PIL import Image
 
-parser = argparse.ArgumentParser(description='Process some integers.')
-# parser.add_argument('name', 'shortname', type='type',
-#                     default='default', help='helptext')
+parser = argparse.ArgumentParser(description='Simulate Blood Flow')
 parser.add_argument('geometry', help='Geometry for simulation')
-parser.add_argument('--out', '-O', default='out.mp4', help='Video Name')
-parser.add_argument('--fps', '-f', default=30, help='Frames Per Second')
-parser.add_argument('--length', '-l', default=30, help='Video Length')
-parser.add_argument('-R', default=10, help='Reynolds Number')
-parser.add_argument('-U', default=0.1, help='Initial Velocity')
-parser.add_argument('--method', default='velocity',
-                    help='Display Method, velocity or density')
+parser.add_argument('output', help='Output Method: plot or video')
+parser.add_argument('-o', '--out', default='out.mp4', help='Video Name')
+parser.add_argument('-f', '--fps', default=30, help='Frames Per Second')
+parser.add_argument('-l', '--length', default=30, help='Video Length')
+parser.add_argument('-R', '--Reynolds', default=10, help='Reynolds Number')
+parser.add_argument('-U', '--velocity', default=0.1, help='Initial Velocity')
+parser.add_argument('--method', default='velocity   ',
+                    help='Display Method: velocity or density')
 args = parser.parse_args()
 
 
@@ -38,30 +37,35 @@ def mag(u_x, u_y):
 
 
 def update(frame):
-    # Progress our simulation
-    for _ in range(1):  # adjust number of steps for smooth animation
-        fin[i1, -1, :] = fin[i1, -2, :]  # Right wall: outflow condition.'
-        # Calculate macroscopic density and velocity.
-        rho = sumpop(fin)
-        u = np.dot(c.transpose(), fin.transpose((1, 0, 2)))/rho
+    # Right wall: outflow condition.
+    fin[i1, -1, :] = fin[i1, -2, :]
 
-        # Left wall: compute density from known populations.
-        u[:, 0, :] = vel[:, 0, :]
-        rho[0, :] = 1/(1-u[0, 0, :]) * \
-            (sumpop(fin[i2, 0, :])+2.*sumpop(fin[i1, 0, :]))
-        feq = equilibrium(rho, u)  # Left wall: Zou/He boundary condition.
-        fin[i3, 0, :] = fin[i1, 0, :] + feq[i3, 0, :] - fin[i1, 0, :]
+    # Calculate macroscopic density and velocity.
+    rho = sumpop(fin)
+    u = np.dot(c.transpose(), fin.transpose((1, 0, 2)))/rho
 
-        # Collision
-        fout = fin - Omega * (fin - feq)
-        for i in np.arange(9):
-            fout[i, geometry.transpose()] = fin[noslip[i],
-                                                geometry.transpose()]
+    # Left wall: compute density from known populations.
+    u[:, 0, :] = vel[:, 0, :]
+    rho[0, :] = 1/(1-u[0, 0, :]) * \
+        (sumpop(fin[i2, 0, :])+2.*sumpop(fin[i1, 0, :]))
+    feq = equilibrium(rho, u)
 
-        # Streaming
-        for i in np.arange(9):
-            fin[i, :, :] = np.roll(
-                np.roll(fout[i, :, :], c[i, 0], axis=0), c[i, 1], axis=1)
+    # Left wall: Zou/He boundary condition.
+    fin[i3, 0, :] = fin[i1, 0, :] + feq[i3, 0, :] - fin[i1, 0, :]
+
+    # Collision
+    fout = fin - Omega * (fin - feq)
+    for i in np.arange(9):
+        fout[i, geometry.transpose()] = fin[noslip[i], geometry.transpose()]
+
+    # Streaming
+    for i in np.arange(9):
+        fin[i, :, :] = np.roll(
+            np.roll(fout[i, :, :], c[i, 0], axis=0), c[i, 1], axis=1)
+
+    print(rho[-1])
+
+    # Update Array
     if args.method == 'velocity':
         fluidImage.set_array(vis[0](u[0], u[1]).transpose())
     elif args.method == 'density':
@@ -69,9 +73,11 @@ def update(frame):
     else:
         raise ValueError("Invalid Method Specified")
 
-    printProgressBar(frame + 1, frames, prefix='Progress:',
-                     suffix='Complete', length=50)
-    return (fluidImage, wallImage)  # return the figure elements to redraw
+    if args.output == 'video':
+        printProgressBar(frame + 1, frames, prefix='Progress:',
+                         suffix='Complete', length=50)
+
+    return (fluidImage, wallImage)
 
 
 def printProgressBar(iteration, total, prefix='', suffix='', decimals=1,
@@ -81,7 +87,6 @@ def printProgressBar(iteration, total, prefix='', suffix='', decimals=1,
     filledLength = int(length * iteration // total)
     bar = fill * filledLength + '-' * (length - filledLength)
     print('\r%s |%s| %s%% %s' % (prefix, bar, percent, suffix), end=printEnd)
-    # Print New Line on Complete
     if iteration == total:
         print()
 
@@ -90,10 +95,11 @@ if __name__ == '__main__':
     geometry = np.asarray(Image.open(args.geometry).convert('1'))
     height, width = geometry.shape
 
-    viscosity = args.U/args.R
-    Omega = 1.0 / (3.*viscosity+0.5)  # Relaxation parameter.
+    viscosity = float(args.velocity)/int(args.Reynolds)
 
-    frames = args.fps*args.length
+    # Relaxation parameter.
+    Omega = 1.0 / (3.*viscosity+0.5)
+    frames = int(args.fps)*int(args.length)
 
     # Lattice Constants
     c = np.array([(x, y) for x in [0, -1, 1] for y in [0, -1, 1]])
@@ -106,17 +112,14 @@ if __name__ == '__main__':
     i3 = np.arange(9)[np.asarray([ci[0] > 0 for ci in c])]
 
     # Calculate macroscopic density and velocity.
-    # vel = np.fromfunction(lambda d, x, y: (1-d)*args.U *
-    #                       (1.0+1e-4*np.sin(y/(height-1)*2*np.pi)),
-    #                       (2, width, height))
-    vel = np.array([np.full((width, height), args.U),
+    vel = np.array([np.full((width, height), args.velocity),
                     np.full((width, height), 0)])
     feq = equilibrium(1, vel)
     fin = feq.copy()
     rho = sumpop(fin)
     u = np.dot(c.transpose(), fin.transpose((1, 0, 2)))/rho
 
-    # Graphics helper stuff here
+    # Initialise Figure
     fig = plt.figure(figsize=(8, 3))
     vis = [mag, 0.2]
     if args.method == 'velocity':
@@ -137,13 +140,19 @@ if __name__ == '__main__':
         )
     else:
         raise ValueError("Invalid Method Specified")
-    wImageArray = np.zeros((height, width, 4), np.uint8)  # an RGBA image
+    wImageArray = np.zeros((height, width, 4), np.uint8)
     wImageArray[geometry, 3] = 255
     wallImage = plt.imshow(wImageArray, origin='lower', interpolation='none')
 
+    # Initialise Animation
     animate = matplotlib.animation.FuncAnimation(
         fig, update, interval=1, blit=True, frames=frames)
-    # plt.show()
-    Writer = matplotlib.animation.writers['ffmpeg']
-    writer = Writer(fps=args.fps, metadata=dict(artist='Me'), bitrate=1800)
-    animate.save(args.out, writer=writer)
+    if args.output == 'plot':
+        plt.show()
+    elif args.output == 'video':
+        Writer = matplotlib.animation.writers['ffmpeg']
+        writer = Writer(fps=int(args.fps), metadata=dict(
+            artist='Me'), bitrate=1800)
+        animate.save(args.out, writer=writer)
+    else:
+        raise ValueError("Invalid Output Method Specified")
