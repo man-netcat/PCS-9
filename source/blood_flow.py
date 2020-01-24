@@ -74,6 +74,8 @@ def update(frame):
     if args.output == 'video':
         printProgressBar(frame + 1, frames, prefix='Progress:',
                          suffix='Complete', length=50)
+    for desc in keypoints.keys():
+        data[desc] = np.append(data[desc], rho.transpose()[keypoints[desc]])
 
     return (fluidImage, wallImage)
 
@@ -116,6 +118,15 @@ if __name__ == '__main__':
     fin = feq.copy()
     rho = sumpop(fin)
     u = np.dot(c.transpose(), fin.transpose((1, 0, 2)))/rho
+
+    # Dictionary for data
+    f = open("./out/probe.txt", "r")
+    keypoints = {}
+    data = {}
+    for line in f:
+        desc, x, y = line.rstrip().split(',')
+        keypoints[desc] = (round(float(y)), round(float(x)))
+        data[desc] = np.array([])
 
     # Initialise Figure
     fig = plt.figure(figsize=(8, 3))
