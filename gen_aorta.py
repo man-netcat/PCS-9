@@ -8,71 +8,78 @@ import itertools
 
 import geometry.aorta as aorta
 
-# parse arguments
-parser = argparse.ArgumentParser(description='Generate multiple bifurcation geom files')
-# parser.add_argument('--type', '-t', type=int, default=0, help='0 for just one artery change width at the time'
-#                                                               '1 for all combinations of widths')
-parser.add_argument('--res', '-R', type=int, default=20, help='Number of pixels per centimeter')
-parser.add_argument('--num', '-n', type=int, default=2, help='Number of steps per vein')
-parser.add_argument('--min', '-m', type=float, default=0.0, help='Min width of the narrowing')
-parser.add_argument('--max', '-M', type=float, default=0.5, help='Max width of the narrowing')
-parser.add_argument('--out', '-o', type=str, default='out', help='The name of the output folder')
-parser.add_argument('--clear', '-c', action='store_true', help='Clear the output folder')
-parser.add_argument('--draw', '-d', action='store_true', help='Draw probes at end')
-args = parser.parse_args()
+def parse_args():
+    # parse arguments
+    parser = argparse.ArgumentParser(description='Generate multiple bifurcation geom files')
+    parser.add_argument('--type', '-t', type=int, default=0, help='0 for just one artery change width at the time'
+                                                                  '1 for all combinations of widths')
+    parser.add_argument('--res', '-R', type=int, default=20, help='Number of pixels per centimeter')
+    parser.add_argument('--num', '-n', type=int, default=3, help='Number of steps per vein')
+    parser.add_argument('--min', '-m', type=float, default=0.0, help='Min width of the narrowing')
+    parser.add_argument('--max', '-M', type=float, default=0.5, help='Max width of the narrowing')
+    parser.add_argument('--out', '-o', type=str, default='out', help='The name of the output folder')
+    parser.add_argument('--clear', '-c', action='store_true', help='Clear the output folder')
+    parser.add_argument('--draw', '-d', action='store_true', help='Draw probes at end')
+    return parser.parse_args()
 
-# make folder
-if not args.out:
-    print('No out path')
-    exit(1)
-folder = args.out
-if args.clear and os.path.exists(folder):
-    shutil.rmtree(folder)
-if not os.path.exists(folder):
-    os.mkdir(folder)
+def make_output_folder(args):
+    # make folder
+    if not args.out:
+        print('No out path')
+        exit(1)
+    folder = args.out
+    if args.clear and os.path.exists(folder):
+        shutil.rmtree(folder)
+        os.mkdir(folder)
+    elif not os.path.exists(folder):
+        os.mkdir(folder)
 
-# generate
-widths = np.linspace(args.min, args.max, num=args.num)
-abdominal, arteries = aorta.build_abdominal(args.res)
-artery_widths = {key: val.start_width() for key, val in arteries.items()}
 
-for artery_name, artery in arteries.items():
-    if artery_name is 'aorta' and True:
-        continue
-    for width in np.linspace(args.min, args.max, num=args.num):
-        artery.add_narrowing(loc=0.5, width=0.3, height=width)
+def generate(args):
+    abdominal, arteries = aorta.build_abdominal(args.res)
+    iterator = comb(args, arteries) if args.type is 1 else prod(args, arteries)
+    for filename in iterator:
+        print(filename)
         image = abdominal.get_image()
-        filename = f'abdominal_{artery_name}_{width:.4f}.png'
         new_im = Image.fromarray(image)
-        new_im.save(os.path.join(folder, filename))
-
-        # reset
-        artery.set_width(artery_widths.get(artery_name))
-
-# combinations = itertools.combinations_with_replacement(range(args.num), len(arteries))
-# for i, widths in enumerate(combinations):
-#     artery_widths = {name: args.min + (args.max - args.min)*(w/(args.num - 1)) for name, w in zip(artery_names, widths)}
-#     print(i, artery_widths)
+        new_im.save(os.path.join(args.out, filename + '.png'))
 
 
-def normalize(val, range_from, range_to):
-    return
-
-def comb():
-    combinations = itertools.combinations_with_replacement(range(args.num), len(arteries))
+def comb(args, arteries):
+    combinations = itertools.product(range(args.num), repeat=len(arteries))
     artery_names = list(arteries.keys())
     artery_names.remove('aorta')
+    artery_widths_org = {key: val.start_width() for key, val in arteries.items()}
     for widths in combinations:
         artery_widths = {name: args.min + (args.max - args.min)*(w/(args.num - 1)) for name, w in zip(artery_names, widths)}
-        yield artery_widths
+        # yield artery_widths
+        for name, width in artery_widths.items():
+            if name is 'aorta' and True:
+                continue
+            artery = arteries.get(name)
+            artery.set_width(artery_widths_org.get(name))
+            artery.add_narrowing(loc=0.5, width=0.3, height=width)
+        yield '_'.join([f'{w:.4f}' for w in artery_widths.values()])
 
-length = 0
-for artery_widths_new in comb():
-    print(', '.join([f'{name} {width}' for name, width in artery_widths_new.items()]))
-    length += len(list(artery_widths_new))
-    for name, width in artery_widths_new.items():
-        artery = arteries.get(name)
-print(length)
+
+def prod(args, arteries):
+    artery_widths_org = {key: val.start_width() for key, val in arteries.items()}
+    for artery_name, artery in arteries.items():
+        if artery_name is 'aorta' and True:
+            continue
+        for width in np.linspace(args.min, args.max, num=args.num):
+            artery.add_narrowing(loc=0.5, width=0.3, height=width)
+            # yield artery_name, width
+            yield f'{artery_name}_{width:.4f}'
+            artery.set_width(artery_widths_org.get(artery_name))
+
+
+if __name__ == '__main__':
+    args = parse_args()
+    make_output_folder(args)
+    generate(args)
+
+
 
 # for width in widths:
 #     split_vein, arteries = aorta.build_abdominal(args.res)
