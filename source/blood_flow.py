@@ -173,7 +173,6 @@ if __name__ == '__main__':
     else:
         raise ValueError("Invalid Output Method Specified")
 
-    print(data)
     # Plot Graph
     fig2 = plt.figure(figsize=(8, 3))
     for desc in keypoints.keys():
