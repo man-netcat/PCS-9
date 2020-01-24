@@ -15,7 +15,7 @@ parser.add_argument('-f', '--fps', default=30, help='Frames Per Second')
 parser.add_argument('-l', '--length', default=30, help='Video Length')
 parser.add_argument('-R', '--Reynolds', default=10, help='Reynolds Number')
 parser.add_argument('-U', '--velocity', default=0.1, help='Initial Velocity')
-parser.add_argument('--method', default='velocity   ',
+parser.add_argument('--method', default='velocity',
                     help='Display Method: velocity or density')
 args = parser.parse_args()
 
@@ -38,7 +38,7 @@ def mag(u_x, u_y):
 
 def update(frame):
     # Right wall: outflow condition.
-    fin[i1, -1, :] = fin[i1, -2, :]
+    fin[i1, -1, :] = fin[i1, -2, :] * 0.9999
 
     # Calculate macroscopic density and velocity.
     rho = sumpop(fin)
@@ -62,8 +62,6 @@ def update(frame):
     for i in np.arange(9):
         fin[i, :, :] = np.roll(
             np.roll(fout[i, :, :], c[i, 0], axis=0), c[i, 1], axis=1)
-
-    print(rho[-1])
 
     # Update Array
     if args.method == 'velocity':
