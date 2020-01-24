@@ -38,7 +38,7 @@ def mag(u_x, u_y):
 
 def update(frame):
     # Right wall: outflow condition.
-    fin[i1, -1, :] = fin[i1, -2, :]
+    fin[i1, -1, :] = fin[i1, -2, :] * 0.9999
 
     # Calculate macroscopic density and velocity.
     rho = sumpop(fin)
@@ -62,8 +62,6 @@ def update(frame):
     for i in np.arange(9):
         fin[i, :, :] = np.roll(
             np.roll(fout[i, :, :], c[i, 0], axis=0), c[i, 1], axis=1)
-
-    print(rho[-1])
 
     # Update Array
     if args.method == 'velocity':
