@@ -63,19 +63,24 @@ def update(frame):
         fin[i, :, :] = np.roll(
             np.roll(fout[i, :, :], c[i, 0], axis=0), c[i, 1], axis=1)
 
+    # Update Data
+    for desc in keypoints.keys():
+        if args.method == 'velocity':
+            data[desc] = np.append(data[desc], vis[0](
+                u[0], u[1]).transpose()[keypoints[desc]])
+        elif args.method == 'density':
+            data[desc] = np.append(
+                data[desc], rho.transpose()[keypoints[desc]])
+
     # Update Array
     if args.method == 'velocity':
         fluidImage.set_array(vis[0](u[0], u[1]).transpose())
     elif args.method == 'density':
         fluidImage.set_array(rho.transpose())
-    else:
-        raise ValueError("Invalid Method Specified")
 
     if args.output == 'video':
         printProgressBar(frame + 1, frames, prefix='Progress:',
                          suffix='Complete', length=50)
-    for desc in keypoints.keys():
-        data[desc] = np.append(data[desc], rho.transpose()[keypoints[desc]])
 
     return (fluidImage, wallImage)
 
@@ -120,13 +125,13 @@ if __name__ == '__main__':
     u = np.dot(c.transpose(), fin.transpose((1, 0, 2)))/rho
 
     # Dictionary for data
-    f = open("./out/probe.txt", "r")
-    keypoints = {}
-    data = {}
-    for line in f:
-        desc, x, y = line.rstrip().split(',')
-        keypoints[desc] = (round(float(y)), round(float(x)))
-        data[desc] = np.array([])
+    with open("./out/probe.txt", "r") as f:
+        keypoints = {}
+        data = {}
+        for line in f:
+            desc, x, y = line.split(',')
+            keypoints[desc] = (round(float(y)), round(float(x)))
+            data[desc] = np.array([])
 
     # Initialise Figure
     fig = plt.figure(figsize=(8, 3))
@@ -165,3 +170,11 @@ if __name__ == '__main__':
         animate.save(args.out, writer=writer)
     else:
         raise ValueError("Invalid Output Method Specified")
+
+    print(data)
+    # Plot Graph
+    fig2 = plt.figure(figsize=(8, 3))
+    for desc in keypoints.keys():
+        plt.plot(np.arange(frames+1), data[desc], label=desc)
+    plt.legend()
+    plt.savefig('graph.png')
