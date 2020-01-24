@@ -106,7 +106,7 @@ def make_probes(args, arteries):
                 x_end, y_end = artery.get_probe_point(0.8)
             name = names.get(name)
             f.write(f'{name}{start_suffix},{x_start},{y_start}\n')
-            f.write(f'{name}{end_suffix},{x_end},{x_end}\n')
+            f.write(f'{name}{end_suffix},{x_end},{y_end}\n')
             if args.draw:
                 ax.scatter([x_start, x_end], [y_start, y_end], s=20)
 
