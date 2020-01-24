@@ -17,6 +17,8 @@ parser.add_argument('-R', '--Reynolds', default=10, help='Reynolds Number')
 parser.add_argument('-U', '--velocity', default=0.1, help='Initial Velocity')
 parser.add_argument('--method', default='velocity',
                     help='Display Method: velocity or density')
+parser.add_argument('-g', '--graph', default='graph.png',
+                    help='Graph File Name')
 args = parser.parse_args()
 
 
@@ -177,4 +179,4 @@ if __name__ == '__main__':
     for desc in keypoints.keys():
         plt.plot(np.arange(frames+1), data[desc], label=desc)
     plt.legend()
-    plt.savefig('graph.png')
+    plt.savefig(args.graph)
