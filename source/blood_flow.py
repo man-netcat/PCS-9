@@ -1,11 +1,24 @@
 from __future__ import division, print_function
 
-import sys
+import argparse
 
 import matplotlib.animation
 import matplotlib.pyplot as plt
 import numpy as np
 from PIL import Image
+
+parser = argparse.ArgumentParser(description='Process some integers.')
+# parser.add_argument('name', 'shortname', type='type',
+#                     default='default', help='helptext')
+parser.add_argument('geometry', help='Geometry for simulation')
+parser.add_argument('--out', '-O', default='out.mp4', help='Video Name')
+parser.add_argument('--fps', '-f', default=30, help='Frames Per Second')
+parser.add_argument('--length', '-l', default=30, help='Video Length')
+parser.add_argument('-R', default=10, help='Reynolds Number')
+parser.add_argument('-U', default=0.1, help='Initial Velocity')
+parser.add_argument('--method', default='velocity',
+                    help='Display Method, velocity or density')
+args = parser.parse_args()
 
 
 def sumpop(fin): return np.sum(fin, axis=0)
@@ -49,12 +62,13 @@ def update(frame):
         for i in np.arange(9):
             fin[i, :, :] = np.roll(
                 np.roll(fout[i, :, :], c[i, 0], axis=0), c[i, 1], axis=1)
-    fluidImage.set_array(
-        # Velocity
-        vis[0](u[0], u[1]).transpose()
-        # Density
-        # rho.transpose()
-    )
+    if args.method == 'velocity':
+        fluidImage.set_array(vis[0](u[0], u[1]).transpose())
+    elif args.method == 'density':
+        fluidImage.set_array(rho.transpose())
+    else:
+        raise ValueError("Invalid Method Specified")
+
     printProgressBar(frame + 1, frames, prefix='Progress:',
                      suffix='Complete', length=50)
     return (fluidImage, wallImage)  # return the figure elements to redraw
@@ -73,16 +87,13 @@ def printProgressBar(iteration, total, prefix='', suffix='', decimals=1,
 
 
 if __name__ == '__main__':
-    geometry = np.asarray(Image.open(sys.argv[1]).convert('1'))
+    geometry = np.asarray(Image.open(args.geometry).convert('1'))
     height, width = geometry.shape
 
-    Re = 50  # Reynolds number.
-    u_0 = 0.1  # Velocity in lattice units.
-    viscosity = u_0/Re
+    viscosity = args.U/args.R
     Omega = 1.0 / (3.*viscosity+0.5)  # Relaxation parameter.
 
-    frames = 400
-    fps = 60
+    frames = args.fps*args.length
 
     # Lattice Constants
     c = np.array([(x, y) for x in [0, -1, 1] for y in [0, -1, 1]])
@@ -95,10 +106,10 @@ if __name__ == '__main__':
     i3 = np.arange(9)[np.asarray([ci[0] > 0 for ci in c])]
 
     # Calculate macroscopic density and velocity.
-    # vel = np.fromfunction(lambda d, x, y: (1-d)*u_0 *
+    # vel = np.fromfunction(lambda d, x, y: (1-d)*args.U *
     #                       (1.0+1e-4*np.sin(y/(height-1)*2*np.pi)),
     #                       (2, width, height))
-    vel = np.array([np.full((width, height), u_0),
+    vel = np.array([np.full((width, height), args.U),
                     np.full((width, height), 0)])
     feq = equilibrium(1, vel)
     fin = feq.copy()
@@ -108,22 +119,24 @@ if __name__ == '__main__':
     # Graphics helper stuff here
     fig = plt.figure(figsize=(8, 3))
     vis = [mag, 0.2]
-    # Velocity
-    fluidImage = plt.imshow(
-        vis[0](vel[0], vel[1]).transpose(),
-        origin='lower',
-        norm=plt.Normalize(-vis[1], vis[1]),
-        interpolation='none',
-        cmap=plt.get_cmap('Reds')
-    )
-    # Density
-    # fluidImage = plt.imshow(
-    #     rho.transpose(),
-    #     origin='lower',
-    #     norm=plt.Normalize(1, 1.1),
-    #     interpolation='none',
-    #     cmap=plt.get_cmap('jet')
-    # )
+    if args.method == 'velocity':
+        fluidImage = plt.imshow(
+            vis[0](vel[0], vel[1]).transpose(),
+            origin='lower',
+            norm=plt.Normalize(-vis[1], vis[1]),
+            interpolation='none',
+            cmap=plt.get_cmap('jet')
+        )
+    elif args.method == 'density':
+        fluidImage = plt.imshow(
+            rho.transpose(),
+            origin='lower',
+            norm=plt.Normalize(1, 1.1),
+            interpolation='none',
+            cmap=plt.get_cmap('jet')
+        )
+    else:
+        raise ValueError("Invalid Method Specified")
     wImageArray = np.zeros((height, width, 4), np.uint8)  # an RGBA image
     wImageArray[geometry, 3] = 255
     wallImage = plt.imshow(wImageArray, origin='lower', interpolation='none')
@@ -132,5 +145,5 @@ if __name__ == '__main__':
         fig, update, interval=1, blit=True, frames=frames)
     # plt.show()
     Writer = matplotlib.animation.writers['ffmpeg']
-    writer = Writer(fps=fps, metadata=dict(artist='Me'), bitrate=1800)
-    animate.save('im.mp4', writer=writer)
+    writer = Writer(fps=args.fps, metadata=dict(artist='Me'), bitrate=1800)
+    animate.save(args.out, writer=writer)
