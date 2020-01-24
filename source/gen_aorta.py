@@ -4,6 +4,7 @@ import numpy as np
 import shutil
 from PIL import Image
 import itertools
+import matplotlib.pyplot as plt
 
 import geometry.aorta as aorta
 
@@ -20,6 +21,7 @@ def parse_args():
     parser.add_argument('--clear', '-c', action='store_true', help='Clear the output folder')
     parser.add_argument('--draw', '-d', action='store_true', help='Draw probes at end')
     return parser.parse_args()
+
 
 def make_output_folder(args):
     # make folder
@@ -42,6 +44,7 @@ def generate(args):
         image = abdominal.get_image()
         new_im = Image.fromarray(image)
         new_im.save(os.path.join(args.out, filename + '.png'))
+    return abdominal, arteries
 
 
 def comb(args, arteries):
@@ -73,10 +76,49 @@ def prod(args, arteries):
             artery.set_width(artery_widths_org.get(artery_name))
 
 
+def make_probes(args, arteries):
+    names = {
+        'aorta': 'abdominal aorta',
+        'celiac': 'celiac artery',
+        'superior_mesenteric': 'superior mesenteric artery',
+        'left_renal': 'left renal artery',
+        'right_renal': 'right renal artery',
+        'inferior_mesenteric': 'inferior mesenteric artery',
+        'left_iliac': 'left iliac artery',
+        'right_iliac': 'right iliac artery'
+    }
+    start_suffix = ' start'
+    end_suffix = ' end'
+
+    if args.draw:
+        fig = plt.figure()
+        ax = fig.add_subplot(111)
+        image = abdominal.get_image()
+        ax.imshow(image, cmap=plt.cm.gray)
+
+    with open(os.path.join(args.out, 'probe.txt'), 'w') as f:
+        for name, artery in arteries.items():
+            if name == 'aorta':
+                x_start, y_start = artery.get_probe_point(0.05)
+                x_end, y_end = artery.get_probe_point(1)
+            else:
+                x_start, y_start = artery.get_probe_point(0.2)
+                x_end, y_end = artery.get_probe_point(0.8)
+            name = names.get(name)
+            f.write(f'{name}{start_suffix},{x_start},{y_start}\n')
+            f.write(f'{name}{end_suffix},{x_end},{x_end}\n')
+            if args.draw:
+                ax.scatter([x_start, x_end], [y_start, y_end], s=20)
+
+    if args.draw:
+        plt.show()
+
+
 if __name__ == '__main__':
     args = parse_args()
     make_output_folder(args)
-    generate(args)
+    abdominal, arteries = generate(args)
+    make_probes(args, arteries)
 
 
 
