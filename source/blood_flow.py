@@ -76,12 +76,12 @@ if __name__ == '__main__':
     geometry = np.asarray(Image.open(sys.argv[1]).convert('1'))
     height, width = geometry.shape
 
-    Re = 50  # Reynolds number.
+    Re = 10  # Reynolds number.
     u_0 = 0.1  # Velocity in lattice units.
     viscosity = u_0/Re
     Omega = 1.0 / (3.*viscosity+0.5)  # Relaxation parameter.
 
-    frames = 400
+    frames = 1200
     fps = 60
 
     # Lattice Constants
@@ -109,21 +109,21 @@ if __name__ == '__main__':
     fig = plt.figure(figsize=(8, 3))
     vis = [mag, 0.2]
     # Velocity
-    fluidImage = plt.imshow(
-        vis[0](vel[0], vel[1]).transpose(),
-        origin='lower',
-        norm=plt.Normalize(-vis[1], vis[1]),
-        interpolation='none',
-        cmap=plt.get_cmap('Reds')
-    )
-    # Density
     # fluidImage = plt.imshow(
-    #     rho.transpose(),
+    #     vis[0](vel[0], vel[1]).transpose(),
     #     origin='lower',
-    #     norm=plt.Normalize(1, 1.1),
+    #     norm=plt.Normalize(-vis[1], vis[1]),
     #     interpolation='none',
-    #     cmap=plt.get_cmap('jet')
+    #     cmap=plt.get_cmap('Reds')
     # )
+    # Density
+    fluidImage = plt.imshow(
+        rho.transpose(),
+        origin='lower',
+        norm=plt.Normalize(1, 1.1),
+        interpolation='none',
+        cmap=plt.get_cmap('jet')
+    )
     wImageArray = np.zeros((height, width, 4), np.uint8)  # an RGBA image
     wImageArray[geometry, 3] = 255
     wallImage = plt.imshow(wImageArray, origin='lower', interpolation='none')
