@@ -52,9 +52,9 @@ def update(frame):
 
     fluidImage.set_array(
         # Velocity
-        vis[0](u[0], u[1]).transpose()
+        # vis[0](u[0], u[1]).transpose()
         # Density
-        # rho.transpose()
+        rho.transpose()
     )
     # fluidImage = plt.imshow(
     #     vis[0](u[0], u[1]).transpose(),
@@ -113,9 +113,9 @@ if __name__ == '__main__':
     vis = [mag, 0.2]
     fluidImage = plt.imshow(
         # Velocity
-        vis[0](vel[0], vel[1]).transpose(),
+        # vis[0](vel[0], vel[1]).transpose(),
         # Density
-        # rho.transpose(),
+        rho.transpose(),
         origin='lower',
         norm=plt.Normalize(-vis[1], vis[1]),
         interpolation='none',

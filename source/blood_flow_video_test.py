@@ -12,6 +12,8 @@ import matplotlib.animation
 from PIL import Image
 import numpy as np
 import sys
+import os
+import cv2
 
 # Fixed parameters:
 width = 400
@@ -22,8 +24,8 @@ omega = 1 / (3*viscosity + 0.5)     # parameter for "relaxation"
 
 # Custom parameters
 geometry = "./out/geometry2.png"
-videoname = "video.mp4"
-fps = 15
+videoname = "video.avi"
+fps = 20
 frames = 300
 
 if len(sys.argv) > 1:
@@ -241,28 +243,42 @@ def nextFrame(frame):
         collide()
         boundary()
 
+    if not os.path.exists("pics"):
+        os.mkdir("pics")
+
+    plt.savefig("./pics/" + str(frame) + ".png")
+    plt.close()
+    
     # Show the speed in the image
     # fluidImage = plt.imshow(vis[0](ux, uy), origin='lower', norm=plt.Normalize(-vis[1], vis[1]), 
     # cmap=plt.get_cmap('jet'), interpolation='none')
 
     # Show the pressure in the image
-    # fluidImage = plt.imshow(rho, origin='lower', cmap=plt.get_cmap('Reds'), interpolation='none')
+    fluidImage = plt.imshow(rho, origin='lower', cmap=plt.get_cmap('Reds'), interpolation='none')
     
     # Add the walls to the image
-    # plt.imshow(wImageArray, origin='lower', interpolation='none')
-    # print(rho.shape)
-    # print(fluidImage.shape)
-    fluidImage.set_array(
-        rho
-    )
+    plt.imshow(wImageArray, origin='lower', interpolation='none')
     
     # Show progress of simulation
     printProgressBar(frame + 1, frames, prefix = 'Progress:', suffix = 'Complete', length = 50)
     return (fluidImage, wallImage)
 
-animate = matplotlib.animation.FuncAnimation(fig, nextFrame, interval=1, blit=True, frames=frames)
-plt.show()
+for i in range(frames):
+    nextFrame(i)
 
-Writer = matplotlib.animation.writers['ffmpeg']
-writer = Writer(fps=fps, metadata=dict(artist='Me'), bitrate=1800)
-animate.save(videoname, writer=writer)
+file_array = []
+for filename in os.listdir("./pics"):
+    file_array.append(int(filename.split('.')[0]))
+
+file_array.sort()
+file_array = [str(frame_nr) + ".png" for frame_nr in file_array]
+frame = cv2.imread(os.path.join("./pics", file_array[1]))
+height, width, layers = frame.shape
+ 
+video = cv2.VideoWriter(videoname, 0, fps, (width,height))
+
+for image in file_array:
+    video.write(cv2.imread(os.path.join("./pics", image)))
+
+cv2.destroyAllWindows()
+video.release()
