@@ -4,21 +4,36 @@ D2Q9 grid
 BGK collision operator
 Karman-vortices
 """
+
 from __future__ import division
 from __future__ import print_function
-import numpy as np
-import time
 import matplotlib.pyplot as plt
 import matplotlib.animation
 from PIL import Image
-import os
-# Simulation parameters
-height = 80                         # dimensions of lattice
+import numpy as np
+import sys
+
+# Fixed parameters:
+height = 80
 width = 200
-viscosity = 0.02                    # viscosity
+viscosity = 0.05
+u0 = 0.25                           # initial and in-flow speed
 omega = 1 / (3*viscosity + 0.5)     # parameter for "relaxation"
-u0 = 0.1                            # initial and in-flow speed
-performanceData = True              # True if performance data is needed
+
+# Custom parameters
+geometry = "./out/geometry2.png"
+videoname = "video.mp4"
+fps = 10
+frames = 300
+
+if len(sys.argv) > 1:
+    geometry = "./geometries/" + sys.argv[1]
+if len(sys.argv) > 2:
+    videoname = sys.argv[2]
+if len(sys.argv) > 3:
+    fps = sys.argv[3]
+if len(sys.argv) > 4:
+    frames = sys.argv[4]
 
 # Lattice weight constants for D2Q9
 f_n = 4.0/9.0
@@ -51,24 +66,38 @@ rho = n0 + nN + nS + nE + nW + nNE + nSE + nNW + nSW
 ux = (nE + nNE + nSE - nW - nNW - nSW) / rho
 uy = (nN + nNE + nNW - nS - nSE - nSW) / rho
 
-
 # Initialize wall locations:
-# Set to True wherever there's a wall
-# wall = np.zeros((height, width), bool)
+wall = np.asarray(Image.open(geometry).convert('1')) == 0
+geometry_input = [x for x in range(len(wall.transpose()[0])) if not wall.transpose()[0][x]]
+geometry_outputs = [x for x in range(len(wall.transpose()[0])) if not wall.transpose()[-1][x]]
 
-# # wall[int((height/2)-8):int((height/2)+8), int((height/2)-4):int((height/2)+4)] = True            # simple linear wall
+index = 0
+for value in geometry_outputs:
+    if index == 0:
+        oldValue = value
+        index += 1
+        continue
+    if oldValue - value < -1:
+        break
+    oldValue = value
+    index += 1
 
-# # Set up cylinder
-# for y in range(0, height):
-#     for x in range(0, width):
-#         if np.sqrt((x-width/4)**2 + (y-height/2)**2) < 10.0:
-#             wall[y, x] = True
-# #wall[40, 50:75] = True
-wall = np.asarray(Image.open('geometry2.png').convert('1')) == 0
+geometry_output1 = geometry_outputs[:index]
+geometry_output2 = geometry_outputs[index:]
+
+
+n0_input_eq = n0.transpose()[0][geometry_input]
+nN_input_eq = nN.transpose()[0][geometry_input]
+nS_input_eq = nS.transpose()[0][geometry_input]
+nE_input_eq = nE.transpose()[0][geometry_input]
+nW_input_eq = nW.transpose()[0][geometry_input]
+nNE_input_eq = nNE.transpose()[0][geometry_input]
+nNW_input_eq = nNW.transpose()[0][geometry_input]
+nSE_input_eq = nSE.transpose()[0][geometry_input]
+nSW_input_eq = nSW.transpose()[0][geometry_input]
+
 # Set up indices for fast evaluation of wall neighbors
-# sites just north of barriers
 barrierN = np.roll(wall,  1, axis=0)
-# sites just south of barriers
 barrierS = np.roll(wall, -1, axis=0)
 barrierE = np.roll(wall,  1, axis=1)
 barrierW = np.roll(wall, -1, axis=1)
@@ -78,10 +107,8 @@ barrierSE = np.roll(barrierS,  1, axis=1)
 barrierSW = np.roll(barrierS, -1, axis=1)
 
 # Move all particles by one step along their directions of motion (periodic boundary):
-
-
 def stream():
-    global nN, nS, nE, nW, nNE, nNW, nSE, nSW
+    global rho, ux, uy, n0, nN, nS, nE, nW, nNE, nNW, nSE, nSW
     # axis 0 is north-south; + direction is north
     nN = np.roll(nN,   1, axis=0)
     nNE = np.roll(nNE,  1, axis=0)
@@ -96,6 +123,17 @@ def stream():
     nW = np.roll(nW,  -1, axis=1)
     nNW = np.roll(nNW, -1, axis=1)
     nSW = np.roll(nSW, -1, axis=1)
+    # Update left input stream
+    np.put(n0.transpose(), geometry_input, n0_input_eq)
+    np.put(nN.transpose(), geometry_input, nN_input_eq)
+    np.put(nS.transpose(), geometry_input, nS_input_eq)
+    np.put(nE.transpose(), geometry_input, nE_input_eq)
+    np.put(nW.transpose(), geometry_input, nW_input_eq)
+    np.put(nNE.transpose(), geometry_input, nNE_input_eq)
+    np.put(nNW.transpose(), geometry_input, nNW_input_eq)
+    np.put(nSE.transpose(), geometry_input, nSE_input_eq)
+    np.put(nSW.transpose(), geometry_input, nSW_input_eq)
+
 
 
 # Collide particles within each cell to redistribute velocities (can be optimized a little more):
@@ -153,8 +191,6 @@ def boundary():
     nSW[:, 0] = o_36 * (1 - 3*u0 + 4.5*u0**2 - 1.5*u0**2)
 
 # Helper functions
-
-
 def curl(ux, uy):
     return np.roll(uy, -1, axis=1) - np.roll(uy, 1, axis=1) - np.roll(ux, -1, axis=0) + np.roll(ux, 1, axis=0)
 
@@ -162,56 +198,65 @@ def curl(ux, uy):
 def mag(ux, uy):
     return np.sqrt(ux**2+uy**2)
 
-
-def momentumExchange():
-    mN = np.sum(nN[wall]+nS[barrierN])
-    mS = np.sum(nS[wall]+nN[barrierS])
-    mE = np.sum(nE[wall]+nW[barrierE])
-    mW = np.sum(nW[wall]+nE[barrierW])
-
-    mNW = np.sum(nNW[wall] + nSE[barrierNW])
-    mSE = np.sum(nSE[wall] + nNW[barrierSE])
-    mNE = np.sum(nNE[wall] + nSW[barrierNE])
-    mSW = np.sum(nSW[wall] + nNE[barrierSW])
-
-    dm_x = mW - mE + mNW - mSE - mNE + mSW
-    dm_y = mN - mS + mNW - mSE + mNE - mSW
-
-    # Note: this is momentum density now, multiply by dx^2 to get momentum
-    # Note2: we can assume F = dm / dt
-    return (dm_x, dm_y)
-
-
 #### Graphics helper stuff here
-theFig = plt.figure(figsize=(8,3))
+fig = plt.figure(figsize=(8,3))
 vis = [mag, 0.2]
-#vis = [curl, 0.02]
-fluidImage = plt.imshow(vis[0](ux, uy), origin='lower', norm=plt.Normalize(-vis[1], vis[1]), cmap=plt.get_cmap('Reds'), interpolation='none')    
+# vis = [curl, 0.02]
+fluidImage = plt.imshow(vis[0](ux, uy), origin='lower', norm=plt.Normalize(-vis[1], vis[1]), cmap=plt.get_cmap('jet'), interpolation='none')    
 wImageArray = np.zeros((height, width, 4), np.uint8)  # an RGBA image
-wImageArray[wall,3] = 255                             # set alpha=255 wall sites only
+wImageArray[wall, 3] = 255                            # set alpha=255 wall sites only
 wallImage = plt.imshow(wImageArray, origin='lower', interpolation='none')
 
-# plt.show()
+# Print iterations progress
+def printProgressBar (iteration, total, prefix = '', suffix = '', decimals = 1, length = 100, fill = '█', printEnd = "\r"):
+    """
+    Call in a loop to create terminal progress bar
+    @params:
+        iteration   - Required  : current iteration (Int)
+        total       - Required  : total iterations (Int)
+        prefix      - Optional  : prefix string (Str)
+        suffix      - Optional  : suffix string (Str)
+        decimals    - Optional  : positive number of decimals in percent complete (Int)
+        length      - Optional  : character length of bar (Int)
+        fill        - Optional  : bar fill character (Str)
+        printEnd    - Optional  : end character (e.g. "\r", "\r\n") (Str)
+    """
+    percent = ("{0:." + str(decimals) + "f}").format(100 * (iteration / float(total)))
+    filledLength = int(length * iteration // total)
+    bar = fill * filledLength + '-' * (length - filledLength)
+    print('\r%s |%s| %s%% %s' % (prefix, bar, percent, suffix), end = printEnd)
+    # Print New Line on Complete
+    if iteration == total: 
+        print()
 
+plt.ion()
 # Function called to update plot -> also progresses the simulation
-def nextFrame(arg):         # (arg is the frame number)
-    ## We can also save frames for a video
-    if not os.path.exists("pics"):
-        os.mkdir("pics")
-
-    plt.savefig("./pics/" + str(arg) + ".png")
-    plt.close()
+def nextFrame(frame):
+    plt.close
+    
     # Progress our simulation
-    for step in range(15):                  # adjust number of steps for smooth animation
+    for step in range(1): # adjust number of steps for smooth animation
         stream()
         collide()
         boundary()
-    
-    # Update the plot image
-    fluidImage = plt.imshow(vis[0](ux, uy), origin='lower', norm=plt.Normalize(-vis[1], vis[1]), cmap=plt.get_cmap('Reds'), interpolation='none')
-    plt.imshow(wImageArray, origin='lower', interpolation='none')
-    return (fluidImage, wallImage)       # return the figure elements to redraw
 
-for i in range(1000):
-    print(i)
-    nextFrame(i)
+    # Show the speed in the image
+    # fluidImage = plt.imshow(vis[0](ux, uy), origin='lower', norm=plt.Normalize(-vis[1], vis[1]), 
+    # cmap=plt.get_cmap('jet'), interpolation='none')
+
+    # Show the pressure in the image
+    fluidImage = plt.imshow(rho, origin='lower', cmap=plt.get_cmap('Reds'), interpolation='none')
+    
+    # Add the walls to the image
+    plt.imshow(wImageArray, origin='lower', interpolation='none')
+    
+    # Show progress of simulation
+    printProgressBar(frame + 1, frames, prefix = 'Progress:', suffix = 'Complete', length = 50)
+    return (fluidImage, wallImage)
+
+animate = matplotlib.animation.FuncAnimation(fig, nextFrame, interval=1, blit=True, frames=frames)
+plt.show()
+
+Writer = matplotlib.animation.writers['ffmpeg']
+writer = Writer(fps=fps, metadata=dict(artist='Me'), bitrate=1800)
+animate.save(videoname, writer=writer)

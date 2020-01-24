@@ -5,7 +5,7 @@ import numpy as np
 from geometry.veins import Veins
 
 split_vein = Veins(1000, 500)
-v0 = split_vein.add_vein((0, 250), (200, 450), angle_from=0, width=50)
+v0 = split_vein.add_vein((0, 250), (200, 450), angle=0, width=50)
 a1 = v0.add_end(40)
 a2 = v0.add_end(-40)
 v0.append_vein((1000, 400), end_i=a1, width=50)
