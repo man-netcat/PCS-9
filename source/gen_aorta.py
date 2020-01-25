@@ -78,6 +78,7 @@ def prod(args, arteries):
 
 def make_probes(args, arteries):
     names = {
+        'supraceliac_aorta': 'supraceliac aorta',
         'aorta': 'abdominal aorta',
         'celiac': 'celiac artery',
         'superior_mesenteric': 'superior mesenteric artery',
@@ -90,6 +91,7 @@ def make_probes(args, arteries):
     start_suffix = ' start'
     end_suffix = ' end'
 
+    ax=None
     if args.draw:
         fig = plt.figure()
         ax = fig.add_subplot(111)
@@ -97,21 +99,41 @@ def make_probes(args, arteries):
         ax.imshow(image, cmap=plt.cm.gray)
 
     with open(os.path.join(args.out, 'probe.txt'), 'w') as f:
+
         for name, artery in arteries.items():
-            if name == 'aorta':
-                x_start, y_start = artery.get_probe_point(0.05)
-                x_end, y_end = artery.get_probe_point(1)
-            else:
-                x_start, y_start = artery.get_probe_point(0.2)
-                x_end, y_end = artery.get_probe_point(0.8)
+            # if name == 'supraceliac_aorta':
+            #     x_start, y_start = artery.get_probe_point(0.05)
+            #     x_end, y_end = artery.get_probe_point(1)
+            # if name == 'aorta':
+            #     x_start, y_start = artery.get_probe_point(0.05)
+            #     x_end, y_end = artery.get_probe_point(1)
+            # else:
+            #     x_start, y_start = artery.get_probe_point(0.2)
+            #     x_end, y_end = artery.get_probe_point(0.8)
             name = names.get(name)
-            f.write(f'{name}{start_suffix},{x_start},{y_start}\n')
-            f.write(f'{name}{end_suffix},{x_end},{y_end}\n')
-            if args.draw:
-                ax.scatter([x_start, x_end], [y_start, y_end], s=20)
+            if name == 'supraceliac aorta':
+                write_probe(f, artery, [0.1], [name], ax)
+            elif name == 'abdominal aorta':
+                write_probe(f, artery, [1], [name], ax)
+            else:
+                write_probe(f, artery, [0.2, 0.8], [name+start_suffix, name+end_suffix], ax)
 
     if args.draw:
         plt.show()
+
+
+def write_probe(file, artery, locs, names, ax=None):
+    probes = [[name, *artery.get_probe_point(loc)] for name, loc in zip(names, locs)]
+    for name, x, y in probes:
+        file.write(f'{name},{x},{y}\n')
+
+    if ax:
+        print(probes)
+        print([*zip(*probes)][1:])
+        labels, xs, ys = [*zip(*probes)]
+        ax.scatter(xs, ys, s=20)
+        for name, x, y in probes:
+            ax.annotate(name, (x, y), c='C0')
 
 
 if __name__ == '__main__':

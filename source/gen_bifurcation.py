@@ -55,6 +55,8 @@ if not v0:
     exit(1)
 
 # display
+split_vein, v0, v1, v2 = bifurcation.build(
+    args.width, args.height, args.width/5, angle=20)
 image = split_vein.get_image()
 
 probe_in = v0.get_probe_point(0.3)
@@ -78,4 +80,7 @@ if args.draw:
     ax.imshow(image, cmap=plt.cm.gray)
     ax.scatter(
         *zip(*[probe_in, probe_normal, probe_nar_before, probe_nar_after]), s=20)
+    names = ['inlet', 'normal vein', 'start narrow vein', 'end narrow vein']
+    for name, pos in zip(names, [probe_in, probe_normal, probe_nar_before, probe_nar_after]):
+        ax.annotate(name, pos, c='C1')
     plt.show()

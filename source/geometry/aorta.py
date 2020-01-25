@@ -24,6 +24,7 @@ def build_abdominal(scale=10):
     width = scale * 15
     height = scale * 6
 
+    w_supraceliac_aorta_start = 2.07
     w_aorta_start = 1.75
     w_aorta_end = 1.6
     pos_celiac = 1
@@ -32,18 +33,26 @@ def build_abdominal(scale=10):
     w_lr_renal = .5
     pos_bifur = 11
     pos_superior_mesenteric = 3
-    w_superior_mesenteric = .4
+    w_superior_mesenteric = .7
     pos_inferior_mesenteric = pos_superior_mesenteric + 5
-    w_inferior_mesenteric = .8
+    w_inferior_mesenteric = .4
     w_lr_iliac = 1.04
 
     pos_aorta_bot = height/2 + min(w_aorta_start, w_aorta_end)*scale/2-.3*scale
     pos_aorta_top = height/2 - min(w_aorta_start, w_aorta_end)*scale/2+.3*scale
 
     abdominal = Veins(width, height)
-    aorta = abdominal.add_vein(
+    supraceliac_aorta = abdominal.add_vein(
         pos_from=(0, height/2),
-        pos_to=(pos_bifur*scale, height/2),
+        pos_to=(pos_lr_renal*scale, height/2),
+        width=w_supraceliac_aorta_start*scale
+    )
+    supraceliac_aorta_end_l = supraceliac_aorta.add_end(30)
+    supraceliac_aorta_end_c = supraceliac_aorta.add_end(0)
+    supraceliac_aorta_end_r = supraceliac_aorta.add_end(-30)
+    aorta = supraceliac_aorta.append_vein(
+        end_i=supraceliac_aorta_end_c,
+        pos=(pos_bifur*scale, height/2),
         width=w_aorta_start*scale
     )
     aorta.taper_to(w_aorta_end*scale)
@@ -54,41 +63,40 @@ def build_abdominal(scale=10):
     right_iliac = aorta.append_vein((width, 1*scale), end_i=a2, width=w_lr_iliac*scale)
 
     celiac = abdominal.add_vein(
-        pos_from=(pos_celiac*scale, pos_aorta_top),
+        pos_from=(pos_celiac*scale, pos_aorta_top - 0.3*scale),
         pos_to=(pos_celiac*scale + 1*scale, 0),
         width=w_celiac*scale,
-        angle_from=-80,
+        angle_from=-50,
         angle_to=-90
     )
 
-    left_renal = abdominal.add_vein(
-        pos_from=(pos_lr_renal*scale, pos_aorta_bot),
-        pos_to=(pos_lr_renal*scale + 1*scale, height),
+    left_renal = supraceliac_aorta.append_vein(
+        end_i=supraceliac_aorta_end_l,
+        pos=(pos_lr_renal*scale + 2.5*scale, height),
         width=w_lr_renal*scale,
-        angle_from=80,
         angle_to=90)
-    right_renal = abdominal.add_vein(
-        pos_from=(pos_lr_renal*scale, pos_aorta_top),
-        pos_to=(pos_lr_renal*scale + 1*scale, 0),
+    right_renal = supraceliac_aorta.append_vein(
+        end_i=supraceliac_aorta_end_r,
+        pos=(pos_lr_renal*scale + 2.5*scale, 0),
         width=w_lr_renal*scale,
-        angle_from=-80,
         angle_to=-90)
 
     superior_mesenteric = abdominal.add_vein(
-        pos_from=(pos_superior_mesenteric*scale, pos_aorta_top),
-        pos_to=(pos_superior_mesenteric*scale + .5*scale, 0),
+        pos_from=(pos_superior_mesenteric*scale, pos_aorta_top - 0.3*scale),
+        pos_to=(pos_superior_mesenteric*scale + .9*scale, 0),
         width=w_superior_mesenteric*scale,
-        angle_from=-70,
+        angle_from=-40,
         angle_to=-90
     )
     inferior_mesenteric = abdominal.add_vein(
         pos_from=(pos_inferior_mesenteric*scale, pos_aorta_top),
         pos_to=(pos_inferior_mesenteric*scale + 1*scale, 0),
         width=w_inferior_mesenteric*scale,
-        angle_from=-70,
+        angle_from=-60,
         angle_to=-90
     )
     arteries = {
+        'supraceliac_aorta': supraceliac_aorta,
         'aorta': aorta,
         'celiac': celiac,
         'superior_mesenteric': superior_mesenteric,
