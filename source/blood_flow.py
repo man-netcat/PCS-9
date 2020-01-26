@@ -30,7 +30,7 @@ def equilibrium(rho, u):
     usqr = 3./2.*(u[0]**2+u[1]**2)
     feq = np.zeros((9, width, height))
     for i in range(9):
-        feq[i, :, :] = rho*t[i]*(1.+cu[i]+0.5*cu[i]**2-usqr)
+        feq[i, :, :] = rho*w[i]*(1.+cu[i]+0.5*cu[i]**2-usqr)
     return feq
 
 
@@ -38,9 +38,49 @@ def mag(u_x, u_y):
     return np.sqrt(u_x**2+u_y**2)
 
 
+geometry = np.asarray(Image.open(args.geometry).convert('1'))
+height, width = geometry.shape
+
+viscosity = float(args.velocity)/int(args.Reynolds)
+
+# Relaxation parameter.
+Omega = 1.0 / (3.*viscosity+0.5)
+frames = int(args.fps)*int(args.length)
+
+# Lattice Constants
+c = np.array([
+    [0,  0],
+    [1,  0],
+    [0,  1],
+    [-1,  0],
+    [0, -1],
+    [1,  1],
+    [-1,  1],
+    [-1, -1],
+    [1, -1]
+])
+w = np.array([4 / 9, 1 / 9, 1 / 9, 1 / 9, 1 /
+              9, 1 / 36, 1 / 36, 1 / 36, 1 / 36])
+noslip = np.array([0, 3, 4, 1, 2, 7, 8, 5, 6])
+x_neg = np.array([1, 5, 8])
+x_neu = np.array([0, 2, 4])
+x_pos = np.array([3, 6, 7])
+y_neg = np.array([4, 7, 8])
+y_neu = np.array([0, 1, 3])
+y_pos = np.array([2, 5, 6])
+
+# Calculate macroscopic density and velocity.
+vel = np.array([np.full((width, height), args.velocity),
+                np.full((width, height), 0)])
+feq = equilibrium(1, vel)
+fin = feq.copy()
+rho = sumpop(fin)
+u = np.dot(c.transpose(), fin.transpose((1, 0, 2)))/rho
+
+
 def update(frame):
     # Right wall: outflow condition.
-    fin[i1, -1, :] = fin[i1, -2, :] * 0.9999
+    fin[x_pos, -1, :] = fin[x_pos, -2, :]
 
     # Calculate macroscopic density and velocity.
     rho = sumpop(fin)
@@ -49,11 +89,11 @@ def update(frame):
     # Left wall: compute density from known populations.
     u[:, 0, :] = vel[:, 0, :]
     rho[0, :] = 1/(1-u[0, 0, :]) * \
-        (sumpop(fin[i2, 0, :])+2.*sumpop(fin[i1, 0, :]))
+        (sumpop(fin[x_neu, 0, :])+2.*sumpop(fin[x_pos, 0, :]))
     feq = equilibrium(rho, u)
 
     # Left wall: Zou/He boundary condition.
-    fin[i3, 0, :] = fin[i1, 0, :] + feq[i3, 0, :] - fin[i1, 0, :]
+    fin[x_neg, 0, :] = fin[x_pos, 0, :] + feq[x_neg, 0, :] - fin[x_pos, 0, :]
 
     # Collision
     fout = fin - Omega * (fin - feq)
@@ -99,33 +139,6 @@ def printProgressBar(iteration, total, prefix='', suffix='', decimals=1,
 
 
 if __name__ == '__main__':
-    geometry = np.asarray(Image.open(args.geometry).convert('1'))
-    height, width = geometry.shape
-
-    viscosity = float(args.velocity)/int(args.Reynolds)
-
-    # Relaxation parameter.
-    Omega = 1.0 / (3.*viscosity+0.5)
-    frames = int(args.fps)*int(args.length)
-
-    # Lattice Constants
-    c = np.array([(x, y) for x in [0, -1, 1] for y in [0, -1, 1]])
-    t = 1./36. * np.ones(9)
-    t[np.asarray([np.linalg.norm(ci) < 1.1 for ci in c])] = 1./9.
-    t[0] = 4./9.
-    noslip = [c.tolist().index((-c[i]).tolist()) for i in range(9)]
-    i1 = np.arange(9)[np.asarray([ci[0] < 0 for ci in c])]
-    i2 = np.arange(9)[np.asarray([ci[0] == 0 for ci in c])]
-    i3 = np.arange(9)[np.asarray([ci[0] > 0 for ci in c])]
-
-    # Calculate macroscopic density and velocity.
-    vel = np.array([np.full((width, height), args.velocity),
-                    np.full((width, height), 0)])
-    feq = equilibrium(1, vel)
-    fin = feq.copy()
-    rho = sumpop(fin)
-    u = np.dot(c.transpose(), fin.transpose((1, 0, 2)))/rho
-
     # Dictionary for data
     with open("./out/probe.txt", "r") as f:
         keypoints = {}
