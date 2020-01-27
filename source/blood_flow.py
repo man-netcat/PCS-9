@@ -62,9 +62,9 @@ c = np.array([
 w = np.array([4 / 9, 1 / 9, 1 / 9, 1 / 9, 1 /
               9, 1 / 36, 1 / 36, 1 / 36, 1 / 36])
 noslip = np.array([0, 3, 4, 1, 2, 7, 8, 5, 6])
-x_neg = np.array([1, 5, 8])
+x_neg = np.array([3, 6, 7])
 x_neu = np.array([0, 2, 4])
-x_pos = np.array([3, 6, 7])
+x_pos = np.array([1, 5, 8])
 y_neg = np.array([4, 7, 8])
 y_neu = np.array([0, 1, 3])
 y_pos = np.array([2, 5, 6])
@@ -80,9 +80,7 @@ u = np.dot(c.transpose(), fin.transpose((1, 0, 2)))/rho
 
 def update(frame):
     # Right wall: outflow condition.
-    fin[x_pos, -1, :] = fin[x_pos, -2, :]
-    fin[y_pos, :, -1] = fin[y_pos, :, -2]
-    fin[y_neg, :, 0] = fin[y_neg, :, 1]
+    fin[x_neg, -1, :] = fin[x_neg, -2, :]
 
     # Calculate macroscopic density and velocity.
     rho = sumpop(fin)
@@ -91,11 +89,11 @@ def update(frame):
     # Left wall: compute density from known populations.
     u[:, 0, :] = vel[:, 0, :]
     rho[0, :] = 1/(1-u[0, 0, :]) * \
-        (sumpop(fin[x_neu, 0, :])+2.*sumpop(fin[x_pos, 0, :]))
+        (sumpop(fin[x_neu, 0, :])+2.*sumpop(fin[x_neg, 0, :]))
     feq = equilibrium(rho, u)
 
     # Left wall: Zou/He boundary condition.
-    fin[x_neg, 0, :] = fin[x_pos, 0, :] + feq[x_neg, 0, :] - fin[x_pos, 0, :]
+    fin[x_pos, 0, :] = feq[x_pos, 0, :]
 
     # Collision
     fout = fin - Omega * (fin - feq)
@@ -189,8 +187,11 @@ if __name__ == '__main__':
         raise ValueError("Invalid Output Method Specified")
 
     # Plot Graph
-    fig2 = plt.figure(figsize=(8, 3))
+    fig2, ax = plt.subplots()
+
     for desc in keypoints.keys():
         plt.plot(np.arange(frames+1), data[desc], label=desc)
+    ax.set_xlabel('timesteps')
+    ax.set_ylabel(args.method)
     plt.legend()
     plt.savefig(args.graph)
