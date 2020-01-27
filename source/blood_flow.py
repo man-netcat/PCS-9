@@ -187,8 +187,11 @@ if __name__ == '__main__':
         raise ValueError("Invalid Output Method Specified")
 
     # Plot Graph
-    fig2 = plt.figure(figsize=(8, 3))
+    fig2, ax = plt.subplots()
+
     for desc in keypoints.keys():
         plt.plot(np.arange(frames+1), data[desc], label=desc)
+    ax.set_xlabel('timesteps')
+    ax.set_ylabel(args.method)
     plt.legend()
     plt.savefig(args.graph)
