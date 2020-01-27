@@ -62,9 +62,9 @@ c = np.array([
 w = np.array([4 / 9, 1 / 9, 1 / 9, 1 / 9, 1 /
               9, 1 / 36, 1 / 36, 1 / 36, 1 / 36])
 noslip = np.array([0, 3, 4, 1, 2, 7, 8, 5, 6])
-x_neg = np.array([1, 5, 8])
+x_neg = np.array([3, 6, 7])
 x_neu = np.array([0, 2, 4])
-x_pos = np.array([3, 6, 7])
+x_pos = np.array([1, 5, 8])
 y_neg = np.array([4, 7, 8])
 y_neu = np.array([0, 1, 3])
 y_pos = np.array([2, 5, 6])
