@@ -14,7 +14,7 @@ parser.add_argument('-o', '--out', default='out.mp4', help='Video Name')
 parser.add_argument('-f', '--fps', default=30, help='Frames Per Second')
 parser.add_argument('-l', '--length', default=30, help='Video Length')
 parser.add_argument('-R', '--Reynolds', default=10, help='Reynolds Number')
-parser.add_argument('-U', '--velocity', default=0.05, help='Initial Velocity')
+parser.add_argument('-U', '--velocity', default=0.1, help='Initial Velocity')
 parser.add_argument('--method', default='velocity',
                     help='Display Method: velocity or density')
 parser.add_argument('-g', '--graph', default='graph.png',
@@ -22,7 +22,7 @@ parser.add_argument('-g', '--graph', default='graph.png',
 args = parser.parse_args()
 
 
-def sumpop(fin): return np.sum(fin, axis=0)
+def sum_populations(fin): return np.sum(fin, axis=0)
 
 
 def equilibrium(rho, u):
@@ -34,7 +34,7 @@ def equilibrium(rho, u):
     return feq
 
 
-def mag(u_x, u_y):
+def calculate_magnitude(u_x, u_y):
     return np.sqrt(u_x**2+u_y**2)
 
 
@@ -74,7 +74,7 @@ vel = np.array([np.full((width, height), args.velocity),
                 np.full((width, height), 0)])
 feq = equilibrium(1, vel)
 fin = feq.copy()
-rho = sumpop(fin)
+rho = sum_populations(fin)
 u = np.dot(c.transpose(), fin.transpose((1, 0, 2)))/rho
 
 
@@ -83,13 +83,13 @@ def update(frame):
     fin[x_neg, -1, :] = fin[x_neg, -2, :]
 
     # Calculate macroscopic density and velocity.
-    rho = sumpop(fin)
+    rho = sum_populations(fin)
     u = np.dot(c.transpose(), fin.transpose((1, 0, 2)))/rho
 
     # Left wall: compute density from known populations.
     u[:, 0, :] = vel[:, 0, :]
     rho[0, :] = 1/(1-u[0, 0, :]) * \
-        (sumpop(fin[x_neu, 0, :])+2.*sumpop(fin[x_neg, 0, :]))
+        (sum_populations(fin[x_neu, 0, :])+2.*sum_populations(fin[x_neg, 0, :]))
     feq = equilibrium(rho, u)
 
     # Left wall: Zou/He boundary condition.
@@ -150,7 +150,7 @@ if __name__ == '__main__':
 
     # Initialise Figure
     fig = plt.figure(figsize=(8, 3))
-    vis = [mag, 0.2]
+    vis = [calculate_magnitude, 0.2]
     if args.method == 'velocity':
         fluidImage = plt.imshow(
             vis[0](vel[0], vel[1]).transpose(),
