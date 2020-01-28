@@ -7,6 +7,7 @@ import matplotlib.pyplot as plt
 import numpy as np
 from PIL import Image
 
+# Add Command-Line Arguments
 parser = argparse.ArgumentParser(description='Simulate Blood Flow')
 parser.add_argument('geometry', help='Geometry for simulation')
 parser.add_argument('output', help='Output Method: plot or video')
@@ -22,10 +23,16 @@ parser.add_argument('-g', '--graph', default='graph.png',
 args = parser.parse_args()
 
 
-def sum_populations(fin): return np.sum(fin, axis=0)
+def sum_populations(fin):
+    '''Helper function for adding up distributions'''
+    return np.sum(fin, axis=0)
 
 
 def equilibrium(rho, u):
+    '''
+    Calculates the equilibrium distribution from a given density and
+    velocity
+    '''
     cu = 3.0 * np.dot(c, u.transpose(1, 0, 2))
     usqr = 3./2.*(u[0]**2+u[1]**2)
     feq = np.zeros((9, width, height))
@@ -35,16 +42,23 @@ def equilibrium(rho, u):
 
 
 def calculate_magnitude(u_x, u_y):
+    '''
+    Helper function that calculates the magnitude of individual x and y
+    components of the velocity
+    '''
     return np.sqrt(u_x**2+u_y**2)
 
 
+# Initialise Geometry and its dimensions
 geometry = np.asarray(Image.open(args.geometry).convert('1'))
 height, width = geometry.shape
 
+# Initialise simulation variables
 viscosity = float(args.velocity)/int(args.Reynolds)
-
 # Relaxation parameter.
 Omega = 1.0 / (3.*viscosity+0.5)
+
+# Initialise amount of frames for video
 frames = int(args.fps)*int(args.length)
 
 # Lattice Constants
@@ -79,6 +93,10 @@ u = np.dot(c.transpose(), fin.transpose((1, 0, 2)))/rho
 
 
 def update(frame):
+    '''
+    Main step function. This function is called every iteration and updates
+    the density and velocity in the simulation.
+    '''
     # Right wall: outflow condition.
     fin[x_neg, -1, :] = fin[x_neg, -2, :]
 
@@ -129,11 +147,27 @@ def update(frame):
 
 def printProgressBar(iteration, total, prefix='', suffix='', decimals=1,
                      length=100, fill='█', printEnd="\r"):
-    percent = ("{0:." + str(decimals) + "f}"
-               ).format(100 * (iteration / float(total)))
+    """
+    Call in a loop to create terminal progress bar
+    @params:
+        iteration   - Required  : current iteration (Int)
+        total       - Required  : total iterations (Int)
+        prefix      - Optional  : prefix string (Str)
+        suffix      - Optional  : suffix string (Str)
+        decimals    - Optional  : positive number of decimals in percent
+                                  complete (Int)
+        length      - Optional  : character length of bar (Int)
+        fill        - Optional  : bar fill character (Str)
+        printEnd    - Optional  : end character (e.g. "\r", "\r\n") (Str)
+    (Source:)
+    https://stackoverflow.com/questions/3173320/text-progress-bar-in-the-console
+    """
+    percent = ("{0:." + str(decimals) + "f}").format(100 *
+                                                     (iteration / float(total)))
     filledLength = int(length * iteration // total)
     bar = fill * filledLength + '-' * (length - filledLength)
     print('\r%s |%s| %s%% %s' % (prefix, bar, percent, suffix), end=printEnd)
+    # Print New Line on Complete
     if iteration == total:
         print()
 
@@ -170,6 +204,8 @@ if __name__ == '__main__':
     else:
         raise ValueError("Invalid Method Specified")
     wImageArray = np.zeros((height, width, 4), np.uint8)
+
+    # Set the alpha value of the geometry to 255 (not translucent)
     wImageArray[geometry, 3] = 255
     wallImage = plt.imshow(wImageArray, origin='lower', interpolation='none')
 
