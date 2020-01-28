@@ -60,7 +60,7 @@ def comb(args, arteries):
                 continue
             artery = arteries.get(name)
             artery.set_width(artery_widths_org.get(name))
-            artery.add_narrowing(loc=0.5, width=0.3, height=width)
+            artery.add_narrowing(loc=0.5, length=0.3, scale=width)
         yield '_'.join([f'{w:.4f}' for w in artery_widths.values()])
 
 
@@ -70,7 +70,7 @@ def prod(args, arteries):
         if artery_name is 'aorta' and True:
             continue
         for width in np.linspace(args.min, args.max, num=args.num):
-            artery.add_narrowing(loc=0.5, width=0.3, height=width)
+            artery.add_narrowing(loc=0.5, length=0.3, scale=width)
             # yield artery_name, width
             yield f'{artery_name}_{width:.4f}'
             artery.set_width(artery_widths_org.get(artery_name))
@@ -101,15 +101,6 @@ def make_probes(args, arteries):
     with open(os.path.join(args.out, 'probe.txt'), 'w') as f:
 
         for name, artery in arteries.items():
-            # if name == 'supraceliac_aorta':
-            #     x_start, y_start = artery.get_probe_point(0.05)
-            #     x_end, y_end = artery.get_probe_point(1)
-            # if name == 'aorta':
-            #     x_start, y_start = artery.get_probe_point(0.05)
-            #     x_end, y_end = artery.get_probe_point(1)
-            # else:
-            #     x_start, y_start = artery.get_probe_point(0.2)
-            #     x_end, y_end = artery.get_probe_point(0.8)
             name = names.get(name)
             if name == 'supraceliac aorta':
                 write_probe(f, artery, [0.1], [name], ax)
@@ -141,42 +132,3 @@ if __name__ == '__main__':
     make_output_folder(args)
     abdominal, arteries = generate(args)
     make_probes(args, arteries)
-
-
-
-# for width in widths:
-#     split_vein, arteries = aorta.build_abdominal(args.res)
-#     v1.add_narrowing(loc=0.5, width=0.4, height=width)
-#     image = split_vein.get_image()
-#     filename = f'bifurcation_{width:.4f}.png'
-#     new_im = Image.fromarray(image)
-#     new_im.save(os.path.join(folder, filename))
-#
-# if not arteries:
-#     print('Nothing generated')
-#     exit(1)
-
-# # display
-# image = split_vein.get_image()
-#
-# probe_in = v0.get_probe_point(0.3)
-# probe_normal = v2.get_probe_point(0.8)
-# probe_nar_before = v1.get_probe_point(0.2)
-# probe_nar_after = v1.get_probe_point(0.8)
-#
-# with open(os.path.join(folder, 'probe.txt'), 'w') as f:
-#     s = '{},{},{}\n'
-#     f.write(s.format('inlet', *probe_in))
-#     f.write(s.format('normal vein', *probe_normal))
-#     f.write(s.format('start narrow vein', *probe_nar_before))
-#     f.write(s.format('end narrow vein', *probe_nar_after))
-#     # for x, y in probe_in, probe_normal, probe_nar_before, probe_nar_after:
-#     #     f.write(f'{x} {y}\n')
-#
-# # print(probe_in, probe_normal, probe_nar_before, probe_nar_after)
-# if args.draw:
-#     fig = plt.figure()
-#     ax = fig.add_subplot(111)
-#     ax.imshow(image, cmap=plt.cm.gray)
-#     ax.scatter(*zip(*[probe_in, probe_normal, probe_nar_before, probe_nar_after]), s=20)
-#     plt.show()

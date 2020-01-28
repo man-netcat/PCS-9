@@ -1,7 +1,39 @@
+"""
+:mod:`geometry` -- Generate geometry parametrically
+=======================================================
+
+    module:: geometry
+    :synopsis: Generates geometries.
+    moduleauthor:: Martijn Besamusca
+    moduleauthor:: Ralph Erkamps
+    moduleauthor:: Rick Teuthof
+
+vessel.py
+---------
+Low level geometry generation.
+Used to generate edges and nodes.
+
+:Authors:
+    - Martijn Besamusca
+    - Ralph Erkamps
+    - Rick Teuthof
+"""
+
 import numpy as np
 
 
 def edge(org, dest, ang_o, ang_d, width, res):
+    """ Makes a smooth edge.
+
+    :param org: Point of origin.
+    :param dest: Destination point.
+    :param ang_o: Angle of line at the origin.
+    :param ang_d: Angle of line at the destination.
+    :param width: The width of the entire edge or
+                  a list of width with length res containing the widths over the entire line.
+    :param res: The number of straight segments of the edge.
+    :return: The coordinates of the final polygon.
+    """
     org = np.array(org)
     dest = np.array(dest)
     ang_o = np.radians(ang_o)
@@ -20,6 +52,16 @@ def edge(org, dest, ang_o, ang_d, width, res):
 
 
 def node(p, width, angle, angles, widths):
+    """ Make a smooth connecting node from 1 edge to multiple edge.
+
+    :param p: Ending point of the origin edge.
+    :param width: The width of the origin edge.
+    :param angle: The angle of the orign edge.
+    :param angles: The angles of the connecting edges in the order of connecting (first to last).
+    :param widths: The widths of the connecting edges.
+
+    :return: The coordinates of the final polygon.
+    """
     # make connecting geometry
     c_geom = [(0., 0.)]
     for a, w in zip(angles, widths):
@@ -52,6 +94,17 @@ def node(p, width, angle, angles, widths):
 
 
 def bezier(p0, p1, p2, p3, width, res=10):
+    """ Make a bezier curve with a given thickness.
+
+    :param p0: Origin point.
+    :param p1: Origin control point.
+    :param p2: Destination control point
+    :param p3: Destination point
+    :param width: The width of the entire curve or
+                  a list of width with length res containing the widths over the entire line.
+    :param res: The number of straight segments of the edge.
+    :return: The coordinates of the final polygon.
+    """
     b = _bezier(p0, p1, p2, p3, res=res)  # bezier
     b_der = _bezier_deriv(p0, p1, p2, p3, res=res)  # bezier derivative
     b = np.transpose(b)
@@ -70,6 +123,15 @@ def bezier(p0, p1, p2, p3, width, res=10):
 
 
 def _bezier(p0, p1, p2, p3, res=10):
+    """ Make a bezier curve.
+
+    :param p0: Origin point.
+    :param p1: Origin control point.
+    :param p2: Destination control point
+    :param p3: Destination point
+    :param res: The number of straight segments of the edge.
+    :return: The coordinates of the final polygon.
+    """
     ts = np.linspace(0., 1., num=res)
     xs = (1 - ts) ** 3 * p0[0] + 3 * (1 - ts) ** 2 * ts * p1[0] \
          + 3 * (1 - ts) * ts ** 2 * p2[0] + ts ** 3 * p3[0]
@@ -79,6 +141,15 @@ def _bezier(p0, p1, p2, p3, res=10):
 
 
 def _bezier_deriv(p0, p1, p2, p3, res=10):
+    """ The derivative of the bezier curve.
+
+    :param p0: Origin point.
+    :param p1: Origin control point.
+    :param p2: Destination control point
+    :param p3: Destination point
+    :param res: The number of straight segments of the edge.
+    :return: The coordinates of the final polygon.
+    """
     ts = np.linspace(0., 1., num=res)
     xs = 3 * (1 - ts) ** 2 * (p1[0] - p0[0]) + 6 * (1 - ts) * ts * (p2[0] - p1[0]) \
          + 3 * ts ** 2 * (p3[0] - p2[0])

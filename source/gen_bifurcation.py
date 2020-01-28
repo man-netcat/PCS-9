@@ -44,7 +44,7 @@ split_vein, v0, v1, v2 = None, None, None, None
 for width in widths:
     split_vein, v0, v1, v2 = bifurcation.build(
         args.width, args.height, args.width/5, angle=20)
-    v1.add_narrowing(loc=0.5, width=0.4, height=width)
+    v1.add_narrowing(loc=0.5, length=0.4, scale=width)
     image = split_vein.get_image()
     filename = f'bifurcation_{width:.4f}.png'
     new_im = Image.fromarray(image)
