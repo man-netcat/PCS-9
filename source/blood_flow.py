@@ -15,7 +15,7 @@ parser.add_argument('-o', '--out', default='out.mp4', help='Video Name')
 parser.add_argument('-f', '--fps', default=30, help='Frames Per Second')
 parser.add_argument('-l', '--length', default=30, help='Video Length')
 parser.add_argument('-R', '--Reynolds', default=10, help='Reynolds Number')
-parser.add_argument('-U', '--velocity', default=0.1, help='Initial Velocity')
+parser.add_argument('-U', '--velocity', default=0.05, help='Initial Velocity')
 parser.add_argument('--method', default='velocity',
                     help='Display Method: velocity or density')
 parser.add_argument('-g', '--graph', default='graph.png',
