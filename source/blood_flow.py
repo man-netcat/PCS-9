@@ -89,7 +89,8 @@ c = np.array([
     [-1, -1],
     [1, -1]
 ])
-# Weights for the lattice constants used to calculate the equilibrium populations.
+# Weights for the lattice constants used to calculate the equilibrium
+# populations.
 w = np.array([4 / 9, 1 / 9, 1 / 9, 1 / 9, 1 /
               9, 1 / 36, 1 / 36, 1 / 36, 1 / 36])
 # Arrays used for applying boundary conditions
@@ -183,8 +184,9 @@ def printProgressBar(iteration, total, prefix='', suffix='', decimals=1,
     (Source:)
     https://stackoverflow.com/questions/3173320/text-progress-bar-in-the-console
     """
-    percent = ("{0:." + str(decimals) + "f}").format(100 *
-                                                     (iteration / float(total)))
+    percent = (
+        "{0:." + str(decimals) + "f}"
+    ).format(100 * (iteration / float(total)))
     filledLength = int(length * iteration // total)
     bar = fill * filledLength + '-' * (length - filledLength)
     print('\r%s |%s| %s%% %s' % (prefix, bar, percent, suffix), end=printEnd)
@@ -230,8 +232,8 @@ if __name__ == '__main__':
     wImageArray[geometry, 3] = 255
     wallImage = plt.imshow(wImageArray, origin='lower', interpolation='none')
 
-    # Initialise Animation, calls the update function repeatedly and creates a animation of
-    # the figures
+    # Initialise Animation, calls the update function repeatedly and creates an
+    # animation of the figures
     animate = matplotlib.animation.FuncAnimation(
         fig, update, interval=1, blit=True, frames=frames)
     if args.output == 'plot':
