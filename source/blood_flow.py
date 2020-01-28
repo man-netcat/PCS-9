@@ -9,11 +9,12 @@ from PIL import Image
 
 # Add Command-Line Arguments
 parser = argparse.ArgumentParser(description='Simulate Blood Flow')
-parser.add_argument('geometry', help='Geometry for simulation')
+parser.add_argument('geometry', help='Path to geometry for simulation')
 parser.add_argument('output', help='Output Method: plot or video')
 parser.add_argument('-o', '--out', default='out.mp4', help='Video Name')
 parser.add_argument('-f', '--fps', default=30, help='Frames Per Second')
-parser.add_argument('-l', '--length', default=30, help='Video Length')
+parser.add_argument('-l', '--length', default=30,
+                    help='Video Length in seconds')
 parser.add_argument('-R', '--Reynolds', default=10, help='Reynolds Number')
 parser.add_argument('-U', '--velocity', default=0.1, help='Initial Velocity')
 parser.add_argument('--method', default='velocity',
@@ -107,7 +108,8 @@ def update(frame):
     # Left wall: compute density from known populations.
     u[:, 0, :] = vel[:, 0, :]
     rho[0, :] = 1/(1-u[0, 0, :]) * \
-        (sum_populations(fin[x_neu, 0, :])+2.*sum_populations(fin[x_neg, 0, :]))
+        (sum_populations(fin[x_neu, 0, :]) +
+         2.*sum_populations(fin[x_neg, 0, :]))
     feq = equilibrium(rho, u)
 
     # Left wall: Zou/He boundary condition.
