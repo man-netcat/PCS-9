@@ -10,5 +10,5 @@ An example of running the code would be the following:
 
 ```
 python3 gen_bifurcation.py
-python3 blood_flow.py out/bifurcation_0.5000.png
+python3 blood_flow.py out/bifurcation_0.5000.png video
 ```
