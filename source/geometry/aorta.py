@@ -40,10 +40,22 @@ from geometry.vessels import Vessels
 
 
 def build_abdominal(scale=10):
-    """
+    """ Build an idealized flattened abdominal aorta.
 
-    :param scale: px per cm
+    This model is made using multiple sourced described in the file header.
+    It contains the follwing arteries:
+        - aorta from supraceliac to the bifurcation to the iliac arteries
+        - celiac artery
+        - left and right renal arteries
+        - superior and inferior mesentric arteries.
+        - left and right iliac arteries.
+    The aorta is split at the celiac artery, because at that point the abdominal aorta
+    narrows a bit.
+
+    :param scale: The number of pixels per centimeter.
     :return:
+        - A `Vessels` object containing all vessels.
+        - A dictionary with all vessels.
     """
 
     width = scale * 15

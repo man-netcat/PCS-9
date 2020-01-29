@@ -1,3 +1,20 @@
+"""
+gen_aorta.py
+---------
+Generates and saves different aorta geometries.
+Use via `python3 gen_aorta.py <args>`.
+For all the options type `python3 gen_aorta.py --help`.
+The main option to notice is the two types:
+    - Type 0 will generate geometries where just one artery is narrowed at the time
+    - Type 1 will generate all combinations of narrowings.
+
+:Authors:
+    - Martijn Besamusca
+    - Ralph Erkamps
+    - Rick Teuthof
+"""
+
+
 import argparse
 import os
 import numpy as np
@@ -9,6 +26,10 @@ import matplotlib.pyplot as plt
 import geometry.aorta as aorta
 
 def parse_args():
+    """ Parse given arguments.
+
+    :return: Dictionary containing all passed options.
+    """
     # parse arguments
     parser = argparse.ArgumentParser(description='Generate multiple bifurcation geom files')
     parser.add_argument('--type', '-t', type=int, default=0, help='0 for just one artery change width at the time'
@@ -24,6 +45,10 @@ def parse_args():
 
 
 def make_output_folder(args):
+    """ Make the output directory if it doesn't exist.
+
+    :param args: Passed options.
+    """
     # make folder
     if not args.out:
         print('No out path')
@@ -37,6 +62,13 @@ def make_output_folder(args):
 
 
 def generate(args):
+    """ Generate all geometries.
+
+    :param args: Passed options.
+    :return:
+        - The Vessels object containing collection of arteries
+        - A dictionary containing Vessel objects.
+    """
     abdominal, arteries = aorta.build_abdominal(args.res)
     iterator = comb(args, arteries) if args.type is 1 else prod(args, arteries)
     for filename in iterator:
@@ -48,6 +80,12 @@ def generate(args):
 
 
 def comb(args, arteries):
+    """ Generate type 1 options geometries
+
+    :param args: Passed options.
+    :param arteries: A dictionary containing Vessel objects.
+    :return: Yields the name of this geometry configuration.
+    """
     combinations = itertools.product(range(args.num), repeat=len(arteries))
     artery_names = list(arteries.keys())
     artery_names.remove('aorta')
@@ -65,6 +103,12 @@ def comb(args, arteries):
 
 
 def prod(args, arteries):
+    """ Generate type 0 options geometries
+
+    :param args: Passed options.
+    :param arteries: A dictionary containing Vessel objects.
+    :return: Yields the name of this geometry configuration.
+    """
     artery_widths_org = {key: val.start_width() for key, val in arteries.items()}
     for artery_name, artery in arteries.items():
         if artery_name is 'aorta' and True:
@@ -77,6 +121,12 @@ def prod(args, arteries):
 
 
 def make_probes(args, arteries):
+    """ Places all measure points.
+
+    :param args: Passed options.
+    :param arteries: A dictionary containing Vessel objects.
+    :return: None
+    """
     names = {
         'supraceliac_aorta': 'supraceliac aorta',
         'aorta': 'abdominal aorta',
@@ -114,6 +164,15 @@ def make_probes(args, arteries):
 
 
 def write_probe(file, artery, locs, names, ax=None):
+    """ Write a probe location to a file (and to a plot)
+
+    :param file: A open writable file
+    :param artery: The artery which is getting measured.
+    :param locs: Locations measured.
+    :param names: Names of the locations measured.
+    :param ax: (optional) The axes to draw to.
+    :return: None
+    """
     probes = [[name, *artery.get_probe_point(loc)] for name, loc in zip(names, locs)]
     for name, x, y in probes:
         file.write(f'{name},{x},{y}\n')

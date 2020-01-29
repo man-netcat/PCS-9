@@ -1,3 +1,17 @@
+"""
+gen_bifurcation.py
+---------
+Generates and saves different bifurcation geometries.
+Use via `python3 gen_bifurcation.py <args>`.
+For all the options type `python3 gen_bifurcation.py --help`.
+
+:Authors:
+    - Martijn Besamusca
+    - Ralph Erkamps
+    - Rick Teuthof
+"""
+
+
 import argparse
 import os
 import numpy as np
@@ -70,10 +84,7 @@ with open(os.path.join(folder, 'probe.txt'), 'w') as f:
     f.write(s.format('normal vein', *probe_normal))
     f.write(s.format('start narrow vein', *probe_nar_before))
     f.write(s.format('end narrow vein', *probe_nar_after))
-    # for x, y in probe_in, probe_normal, probe_nar_before, probe_nar_after:
-    #     f.write(f'{x} {y}\n')
 
-# print(probe_in, probe_normal, probe_nar_before, probe_nar_after)
 if args.draw:
     fig = plt.figure()
     ax = fig.add_subplot(111)
