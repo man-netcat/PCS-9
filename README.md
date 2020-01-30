@@ -2,7 +2,10 @@
 
 
 Make sure that you have the following pip3 packages installed: `numpy, matplotlib, scikit-image, pillow`
+
 Also check if you installed `ffmpeg`
+
+The code is tested on Python version 3.6.9, on a clean install of Ubuntu 18.04 LTS in a Virtual Machine.
 
 
 To manually run the simulation, first run `gen_bifurcation.py` with parameters of your choice (run `gen_bifurcation.py` with the flag `--help` for parameter explanations) and then run `blood_flow.py` with parameters of your choice (run `blood_flow.py` with the flag `--help` for parameter explanations)
